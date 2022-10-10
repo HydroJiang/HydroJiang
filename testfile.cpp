@@ -10,4 +10,5 @@ int main(){
     for(int i=0;i<10;i++)
         c++;
     cout<<"hello world: "<<c<<endl;
+    cout<<"hello world: "<<c<<endl;
 }
