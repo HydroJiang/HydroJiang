@@ -36,6 +36,23 @@ void split(const string& s, vector<string>& v, const string& c)
 		v.emplace_back(s.substr(pos1));
 }
 
+/*
+int access(const char* pathname, int mode);
+ 
+参数介绍：
+ 
+    pathname 是文件的路径名+文件名
+ 
+    mode：指定access的作用，取值如下
+ 
+F_OK 值为0，判断文件是否存在
+ 
+X_OK 值为1，判断对文件是可执行权限
+ 
+W_OK 值为2，判断对文件是否有写权限
+ 
+R_OK 值为4，判断对文件是否有读权限
+*/
 /* 检查路径上的每一个文件夹是否存在，不存在则创建文件夹，用于还原备份，还原备份之前先创建路径 */
 void createDirList(const char* sourcePath){
     vector<string> dir;
@@ -58,7 +75,7 @@ void changeStat(const char* targetFile, const struct stat &s){
     if(!flag) cout<<targetFile<<" chmod success!"<<endl;
     flag=utimensat(0,targetFile,&(s.st_atim),0);//同步时间
     if(!flag) cout<<targetFile<<" change time success!"<<endl;
-    
+
 }
 
 class Record{

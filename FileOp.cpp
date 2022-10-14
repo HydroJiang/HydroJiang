@@ -15,8 +15,9 @@ using namespace std;
 #define MAX_PATH 100    //工作路径名最大长度
 #define LINE_SIZE 128   //每次拷贝最大字节数
 
+int cp(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName);
 /* 合并文件所在目录和文件名，获得文件路径 */
-   string getSourceFile(const char* path,const char* fileName){
+string getSourceFile(const char* path,const char* fileName){
     string a=path;
     string b=fileName;
     return a+'/'+b;
@@ -119,7 +120,7 @@ int deleteDir(const char* path,const char* fileName){
     }
 }
 
-/* 通用rm -r，自动判断是否为文件 */
+/* 通用rm -r，自动判断文件类型 */
 int rm(const char* path,const char* fileName){
     struct stat buf=getStat(path,fileName);
     string name=getSourceFile(path,fileName);
@@ -131,7 +132,7 @@ int rm(const char* path,const char* fileName){
     }
 }
 
-/* 根据新的目录和新的文件名，在新目录下创建一个新文件，并把文件拷贝过去 */
+/* 根据新的目录和新的文件名，在新目录下创建一个新文件，并把普通文件拷贝过去 */
 int copyNormailFile(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName){
     createDirList(targetPath);//在复制文件/文件夹之前先创造路径
     string sourceFile=getSourceFile(sourcePath,sourceFileName);
@@ -207,24 +208,177 @@ int copyDir(const char* sourcePath,const char* sourceFileName,const char* target
         cout<<"now is dealing with: "<<getSourceFile(newSourcePath.c_str(),newSourceFileName.c_str())<<endl;
         struct stat tmpStat=getStat(newSourcePath.c_str(),newSourceFileName.c_str());
 
-        if(S_ISDIR(tmpStat.st_mode)){//若该文件是目录
-            copyDir(newSourcePath.c_str(),dirData->d_name,newTargetPath.c_str(),dirData->d_name);
-        }else{
-            copyNormailFile(newSourcePath.c_str(),dirData->d_name,newTargetPath.c_str(),dirData->d_name);
-        }
+        cp(newSourcePath.c_str(),dirData->d_name,newTargetPath.c_str(),dirData->d_name);
     }
     closedir(dir);
     changeStat(targetFile.c_str(),fileData);
     return 0;
 }
 
-/*  */
+/*
+int link(const char *oldpath,const char *newpath);
+功能：创建硬链接文件
+
+int symlink(const char *linkpath,const char *targetPath);
+功能：创建软链接文件
+
+ssize_t readlink(const char *pathname, char *buf, size_t bufsiz);
+功能：读取软链接文件链接路径，返回值为软链接文件大小
+
+*/
+/* 输入旧目录，旧文件名，新目录，新文件名，并把软链接文件拷过去 */
+int copyLink(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName){
+    createDirList(targetPath);//在复制文件/文件夹之前先创造路径
+    string sourceFile=getSourceFile(sourcePath,sourceFileName);
+    string targetFile=getSourceFile(targetPath,targetFileName);
+
+    char workPath[MAX_PATH];
+    //getcwd(workPath, MAX_PATH);//获得当前工作路径,用于写日志
+    struct stat fileData=getStat(sourcePath,sourceFileName);
+    int size = fileData.st_size;
+    cout<<"file size: "<<size<<endl;
+    char* linkPath=(char*)malloc(sizeof(char)*size);
+    
+
+    if(!S_ISLNK(fileData.st_mode)){
+        cout<<"this not a soft link!"<<endl;
+        return -1;
+    }
+
+    if(access(targetFile.c_str(),F_OK)==0){
+        cout<<targetFile<<" exist!"<<endl;
+        rm(targetPath,targetFileName);//若存在则先删除，否则无法复制软链接文件
+    }
+
+    readlink(sourceFile.c_str(),linkPath,size);
+    if(symlink(linkPath,targetFile.c_str())==0){
+        cout<<targetFile<<" copy success!"<<endl;
+        changeStat(targetFile.c_str(),fileData);
+        return 0;
+    }
+    else{
+        cout<<targetFile<<" copy fail!"<<endl;
+        return -1;
+    }
+}
+
+/*
+Create a new FIFO named PATH, with permission bits MODE.
+extern int mkfifo (const char *__path, __mode_t __mode)
+输入旧目录，旧文件名，新目录，新文件名，并把管道文件拷过去
+*/
+int copyPipe(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName){
+    createDirList(targetPath);//在复制文件/文件夹之前先创造路径
+    string sourceFile=getSourceFile(sourcePath,sourceFileName);
+    string targetFile=getSourceFile(targetPath,targetFileName);
+
+    char workPath[MAX_PATH];
+    //getcwd(workPath, MAX_PATH);//获得当前工作路径,用于写日志
+    struct stat fileData=getStat(sourcePath,sourceFileName);
+    int size = fileData.st_size;
+    cout<<"file size: "<<size<<endl;
+
+    if(!S_ISFIFO(fileData.st_mode)){
+        cout<<"this not a FIFO!"<<endl;
+        return -1;
+    }
+
+    if(access(targetFile.c_str(),F_OK)==0){
+        cout<<targetFile<<" exist!"<<endl;
+        rm(targetPath,targetFileName);//若存在则先删除，否则无法复制
+    }
+
+    if(mkfifo(targetFile.c_str(),fileData.st_mode)==0){
+        cout<<targetFile<<" copy success!"<<endl;
+        changeStat(targetFile.c_str(),fileData);
+        return 0;
+    }
+    else{
+        cout<<targetFile<<" copy fail!"<<endl;
+        return -1;
+    }
+}
+
+/*
+创建设备文件
+int mknod (const char *__path, __mode_t __mode, __dev_t __dev)
+*/
+int copyDev(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName){
+    createDirList(targetPath);//在复制文件/文件夹之前先创造路径
+    string sourceFile=getSourceFile(sourcePath,sourceFileName);
+    string targetFile=getSourceFile(targetPath,targetFileName);
+
+    char workPath[MAX_PATH];
+    //getcwd(workPath, MAX_PATH);//获得当前工作路径,用于写日志
+    struct stat fileData=getStat(sourcePath,sourceFileName);
+    int size = fileData.st_size;
+    cout<<"file size: "<<size<<endl;
+
+    if(!(S_ISCHR(fileData.st_mode)||S_ISBLK(fileData.st_mode))){
+        cout<<"this not a dev file!"<<endl;
+        return -1;
+    }
+
+    if(access(targetFile.c_str(),F_OK)==0){
+        cout<<targetFile<<" exist!"<<endl;
+        rm(targetPath,targetFileName);//若存在则先删除，否则无法复制
+    }
+
+    if(mknod(targetFile.c_str(),fileData.st_mode,fileData.st_dev)==0){
+        cout<<targetFile<<" copy success!"<<endl;
+        changeStat(targetFile.c_str(),fileData);
+        return 0;
+    }
+    else{
+        cout<<targetFile<<" copy fail!"<<endl;
+        return -1;
+    }
+}
+
+/* cp,自动判断文件类型进行复制 */
+int cp(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName){
+    struct stat fileData=getStat(sourcePath,sourceFileName);
+    mode_t mode=fileData.st_mode;
+    string sourceFile=getSourceFile(sourcePath,sourceFileName);
+    string targetFile=getSourceFile(targetPath,targetFileName);
+    int flag=0;
+
+    if(S_ISREG(mode)){
+        flag=copyNormailFile(sourcePath,sourceFileName,targetPath,targetFileName);
+        changeStat(targetFile.c_str(),fileData);
+    }else if(S_ISDIR(mode)){
+        flag=copyDir(sourcePath,sourceFileName,targetPath,targetFileName);
+        changeStat(targetFile.c_str(),fileData);
+    }else if(S_ISCHR(mode)||S_ISBLK(mode)){
+        flag=copyDev(sourcePath,sourceFileName,targetPath,targetFileName);
+        changeStat(targetFile.c_str(),fileData);
+    }else if(S_ISFIFO(mode)){
+        flag=copyPipe(sourcePath,sourceFileName,targetPath,targetFileName);
+        changeStat(targetFile.c_str(),fileData);
+    }else if(S_ISLNK(mode)){
+        flag=copyLink(sourcePath,sourceFileName,targetPath,targetFileName);
+        changeStat(targetFile.c_str(),fileData);
+    }else{
+        cout<<"unkown file type, unable to copy."<<endl;
+        flag=-1;
+    }
+    return flag;
+}
 
 int main(){
-    char* sourcePath="/home/jgqj/source";
+    char* sourcePath="/home/jgqj";
     char* targetPath="/home/jgqj/target";
-    char* file1="floder";
-    char* file2="hard";
+    char* file1="source";
+    char* file2="soft";
+
+    // // cp test
+    // cp(sourcePath,file1,targetPath,file1);
+
+    // // copyLink测试
+    // copyLink(sourcePath,file1,targetPath,file1);
+
+    // copypipe测试
+    // copyPipe(sourcePath,file1,targetPath,file1);
 
     // // copyNormailfile测试
     // copyNormailFile(sourcePath,file2,targetPath,file2);
@@ -232,7 +386,7 @@ int main(){
     // // copyDir测试
     // copyDir(sourcePath,file1,targetPath,file1);
 
-    // // coutStat测试
+    // coutStat测试
     // coutStat(sourcePath,file1);
     // coutStat(targetPath,file1);
 
