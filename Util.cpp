@@ -9,6 +9,7 @@
 #include <sys/time.h>
 #include <dirent.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 using namespace std;
 
@@ -73,7 +74,7 @@ void changeStat(const char* targetFile, const struct stat &s){
     int flag;
     flag=chmod(targetFile,s.st_mode);//同步权限
     if(!flag) cout<<targetFile<<" chmod success!"<<endl;
-    flag=utimensat(0,targetFile,&(s.st_atim),0);//同步时间
+    flag=utimensat(0,targetFile,&(s.st_atim),AT_SYMLINK_NOFOLLOW);//同步时间,软链接也可同步
     if(!flag) cout<<targetFile<<" change time success!"<<endl;
 
 }

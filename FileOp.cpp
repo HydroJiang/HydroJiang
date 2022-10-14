@@ -245,12 +245,12 @@ int copyLink(const char* sourcePath,const char* sourceFileName,const char* targe
         return -1;
     }
 
-    if(access(targetFile.c_str(),F_OK)==0){
+    if(getStat(targetPath,targetFileName).st_size){//大小不为0,access判断不了软链接是否存在
         cout<<targetFile<<" exist!"<<endl;
         rm(targetPath,targetFileName);//若存在则先删除，否则无法复制软链接文件
     }
 
-    readlink(sourceFile.c_str(),linkPath,size);
+    cout<<"link size: "<<readlink(sourceFile.c_str(),linkPath,size)<<endl;
     if(symlink(linkPath,targetFile.c_str())==0){
         cout<<targetFile<<" copy success!"<<endl;
         changeStat(targetFile.c_str(),fileData);
@@ -366,13 +366,13 @@ int cp(const char* sourcePath,const char* sourceFileName,const char* targetPath,
 }
 
 int main(){
-    char* sourcePath="/home/jgqj";
+    char* sourcePath="/home/jgqj/source";
     char* targetPath="/home/jgqj/target";
     char* file1="source";
     char* file2="soft";
 
-    // // cp test
-    // cp(sourcePath,file1,targetPath,file1);
+    // cp test
+    cp(sourcePath,file2,targetPath,file2);
 
     // // copyLink测试
     // copyLink(sourcePath,file1,targetPath,file1);
@@ -386,9 +386,9 @@ int main(){
     // // copyDir测试
     // copyDir(sourcePath,file1,targetPath,file1);
 
-    // coutStat测试
-    // coutStat(sourcePath,file1);
-    // coutStat(targetPath,file1);
+    // // coutStat测试
+    // coutStat(sourcePath,file2);
+    // coutStat(targetPath,file2);
 
     // // deleteFile测试
     // coutStat(targetPath,file2);
