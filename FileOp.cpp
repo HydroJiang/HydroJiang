@@ -238,14 +238,13 @@ int copyLink(const char* sourcePath,const char* sourceFileName,const char* targe
     int size = fileData.st_size;
     cout<<"file size: "<<size<<endl;
     char* linkPath=(char*)malloc(sizeof(char)*size);
+    struct stat tmp;
     
-
     if(!S_ISLNK(fileData.st_mode)){
         cout<<"this not a soft link!"<<endl;
         return -1;
     }
-
-    if(getStat(targetPath,targetFileName).st_size){//大小不为0,access判断不了软链接是否存在
+    if(!lstat(getSourceFile(targetPath,targetFileName).c_str(),&tmp)){//文件存在，结果为0。access判断不了软链接是否存在
         cout<<targetFile<<" exist!"<<endl;
         rm(targetPath,targetFileName);//若存在则先删除，否则无法复制软链接文件
     }
