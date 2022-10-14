@@ -11,6 +11,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+#include "sockutil.h"          /* some utility functions */
+
 using namespace std;
 
 #define MAX_PATH 100    //工作路径名最大长度
@@ -76,7 +78,26 @@ void changeStat(const char* targetFile, const struct stat &s){
     if(!flag) cout<<targetFile<<" chmod success!"<<endl;
     flag=utimensat(0,targetFile,&(s.st_atim),AT_SYMLINK_NOFOLLOW);//同步时间,软链接也可同步
     if(!flag) cout<<targetFile<<" change time success!"<<endl;
+    // flag=truncate(targetFile,s.st_size);//同步大小
+    // if(!flag) cout<<targetFile<<" change time success!"<<endl;
+    flag=lchown(targetFile,s.st_uid,s.st_gid);//同步组id和用户id
+    if(!flag) cout<<targetFile<<" chown chgrp success!"<<endl;
 
+}
+
+int mksock (const char *__path, __mode_t __mode){
+    struct sockaddr_un namesock;
+    int fd;
+    namesock.sun_family = AF_UNIX;
+    strncpy(namesock.sun_path, (char *)__path, sizeof(namesock.sun_path));
+    fd = socket(AF_UNIX, SOCK_DGRAM, 0);
+    if(bind(fd, (struct sockaddr *) &namesock, sizeof(struct sockaddr_un))){
+        cout<<"socket: "<<__path<<" created fail!"<<endl;
+        close(fd);
+        return -1;
+    }
+    close(fd);
+    return 0;
 }
 
 class Record{
@@ -128,7 +149,5 @@ public:
 };
 
 // int main(){
-//     Record header;
-//     header.getRecord();
-//     header.coutRecord();
+//     cout<<mknod("/home/jgqj/source/block/demo",33188,0);
 // }
