@@ -87,7 +87,6 @@ using namespace std;
             char           d_name[256]; // 文件名
 
 */
-void createDirList(const char* sourcePath);
 class FileDealer{
     struct stat fileData;
     fstream file;
@@ -96,12 +95,6 @@ class FileDealer{
     string fileName;
     
     public:
-    /* 合并文件所在目录和文件名，获得文件路径 */
-    string getSourceFile(){
-        return sourcePath+'/'+fileName;
-    }
-    /* 检查sourcePath上所有文件夹是否都存在，不存在则创建 */
-
     /* 构造函数，仅初始化文件所在目录和文件名,并更新元数据 */
     FileDealer(const char* sourcePath,const char*fileName){
         this->sourcePath=sourcePath;
@@ -113,18 +106,6 @@ class FileDealer{
         this->sourcePath=source.sourcePath;
         this->fileName=source.fileName;
         this->fileData=source.fileData;
-        
-    }
-
-    /* 空构造函数，用于返回错误信息 */
-    FileDealer(int a){
-        this->sourcePath="Fatal";
-        this->fileName="Fatal";
-    }
-    /* 更新元数据，并返回struct stat */
-    struct stat freshStat(){
-        stat(getSourceFile().c_str(),&this->fileData);
-        return this->fileData;
     }
     /* 析构函数，关闭文件流，释放缓存 */
     ~FileDealer(){
@@ -155,50 +136,16 @@ class FileDealer{
         if(S_ISFIFO(buf.st_mode)) cout<<"this is a FIFO (named pipe)."<<endl;
         if(S_ISLNK(buf.st_mode)) cout<<"this is a symbolic link."<<endl;
         if(S_ISSOCK(buf.st_mode)) cout<<"this is a socket."<<endl;
-}
-    /* 根据新的目录和新的文件名，在新目录下创建一个新文件，并把文件拷贝过去 */
-    FileDealer copyFile(const char* targetPath,const char* fileName){
-        createDirList(targetPath);//在复制文件/文件夹之前先创造路径
-        FileDealer outFile(targetPath,fileName);
-        string sourceFile=this->getSourceFile();
-        string targetFile=outFile.getSourceFile();
-
-        char workPath[MAX_PATH];  
-        //getcwd(workPath, MAX_PATH);//获得当前工作路径,用于写日志
-        this->freshStat();
-        int size = this->fileData.st_size;
-        cout<<"file size: "<<size<<endl;
-
-        if(S_ISDIR(this->fileData.st_mode)){
-            cout<<"this is a dir!"<<endl;
-            exit(1);
-        }
-
-        outFile.file.open(targetFile,ios::out|ios::binary|ios::trunc);
-        this->file.open(sourceFile,ios::in|ios::binary);
-        if(!this->file.is_open()){
-            cout<<"fail to open file: "<<sourceFile<<endl;
-            outFile.file.close();
-            this->file.close();
-            exit(1);
-        }else{
-            cout<<"file: "<<sourceFile<<" opened!"<<endl;
-        }
-        if(!outFile.file.is_open()){
-            cout<<"fail to create file: "<<targetFile<<endl;
-            outFile.file.close();
-            this->file.close();
-            exit(1);
-        }else{
-            cout<<"file: "<<targetFile<<" created!"<<endl;
-        }
-        outFile.file<<this->file.rdbuf();//输入流直接对输出流输出
-        cout<<"file: "<<targetFile<<" copy sucucess!"<<endl;
-        this->file.close();
-        outFile.file.close();
-        this->freshStat();
-        outFile.freshStat();
-        return outFile;
+    }
+    /* 合并文件所在目录和文件名，获得文件路径 */
+    string getSourceFile(){
+        return sourcePath+'/'+fileName;
+    }
+    /* 更新元数据，并返回struct stat */
+    struct stat freshStat(){
+        //这里使用lstat，若目标文件为软链接，则获取软连接文件stat，而非它指向的文件的stat
+        lstat(getSourceFile().c_str(),&this->fileData);
+        return this->fileData;
     }
 
     /* 若本文件为文件夹，则递归删除此文件夹, rm -r */
@@ -251,6 +198,64 @@ class FileDealer{
         else cout<<name<<" 删除成功！"<<endl;
         return 0;
     }
+    /* 通用rm -r，自动判断是否为文件 */
+    int rm(){
+        struct stat buf=freshStat();
+        string name=getSourceFile();
+        if(!S_ISDIR(buf.st_mode)){
+            return this->deleteFile();
+        }
+        else{
+            return this->deleteDir();
+        }
+    }
+
+    /* 根据新的目录和新的文件名，在新目录下创建一个新文件，并把文件拷贝过去 */
+    FileDealer copyNormailFile(const char* targetPath,const char* fileName){
+        createDirList(targetPath);//在复制文件/文件夹之前先创造路径
+        FileDealer outFile(targetPath,fileName);
+        string sourceFile=this->getSourceFile();
+        string targetFile=outFile.getSourceFile();
+
+        char workPath[MAX_PATH];
+        //getcwd(workPath, MAX_PATH);//获得当前工作路径,用于写日志
+        this->freshStat();
+        int size = this->fileData.st_size;
+        cout<<"file size: "<<size<<endl;
+
+        if(!S_ISREG(this->fileData.st_mode)){
+            cout<<"this not a regular file!"<<endl;
+            exit(1);
+        }
+
+        outFile.file.open(targetFile,ios::out|ios::binary|ios::trunc);
+        this->file.open(sourceFile,ios::in|ios::binary);
+        if(!this->file.is_open()){
+            cout<<"fail to open file: "<<sourceFile<<endl;
+            outFile.file.close();
+            this->file.close();
+            exit(1);
+        }else{
+            cout<<"file: "<<sourceFile<<" opened!"<<endl;
+        }
+        if(!outFile.file.is_open()){
+            cout<<"fail to create file: "<<targetFile<<endl;
+            outFile.file.close();
+            this->file.close();
+            exit(1);
+        }else{
+            cout<<"file: "<<targetFile<<" created!"<<endl;
+        }
+        outFile.file<<this->file.rdbuf();//输入流直接对输出流输出
+        cout<<"file: "<<targetFile<<" copy sucucess!"<<endl;
+        this->file.close();
+        outFile.file.close();
+        this->freshStat();
+        outFile.freshStat();
+        changeStat(targetFile.c_str(),this->fileData);
+        return outFile;
+    }
+
 
     /* 根据新的目录和新的目录名，在目标目录下创建一个新目录，并递归把所有文件拷贝过去 */
     FileDealer copyDir(const char* targetPath,const char* dirName){
@@ -282,7 +287,7 @@ class FileDealer{
             if(S_ISDIR(tmpStat.st_mode)){//若该文件是目录
                 tmpFile.copyDir(targetFile.c_str(),dirData->d_name);
             }else{
-                tmpFile.copyFile(targetFile.c_str(),dirData->d_name);
+                tmpFile.copyNormailFile(targetFile.c_str(),dirData->d_name);
             }
         }
         closedir(dir);
@@ -292,23 +297,23 @@ class FileDealer{
 
 int main(){
     string sourcePath="/home/jgqj/source";
-    string targetPath="/home/jgqj/test1/test2/test3";
+    string targetPath="/home/jgqj/target";
     string sourceFileName="floder";
     string targetFileName="soft";
 
-    // copyfile测试
-    // FileDealer sourceFile(sourcePath.c_str(),sourceFileName.c_str());
-    // FileDealer targetFile=sourceFile.copyFile(targetPath.c_str(),sourceFileName.c_str());
+    // copyNormailfile测试
+    FileDealer sourceFile(sourcePath.c_str(),targetFileName.c_str());
+    FileDealer targetFile=sourceFile.copyNormailFile(targetPath.c_str(),targetFileName.c_str());
 
     // copyDir测试
-    FileDealer sourceDir(sourcePath.c_str(),sourceFileName.c_str());
-    FileDealer targetDir=sourceDir.copyDir(targetPath.c_str(),sourceFileName.c_str());
+    // FileDealer sourceDir(sourcePath.c_str(),sourceFileName.c_str());
+    // FileDealer targetDir=sourceDir.copyDir(targetPath.c_str(),sourceFileName.c_str());
 
     // coutStat测试
     // FileDealer sourceFile(sourcePath.c_str(),sourceFileName.c_str());
     // FileDealer targetFile(targetPath.c_str(),targetFileName.c_str());
-    // sourceFile.coutStat();
-    // targetFile.coutStat();
+    sourceFile.coutStat();
+    targetFile.coutStat();
 
     // deleteFile测试
     // FileDealer sourceFile(targetPath.c_str(),targetFileName.c_str());

@@ -1,0 +1,250 @@
+#include<stdio.h>
+#include<string.h>
+#include<iostream>
+#include<fstream>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <dirent.h>
+#include <unistd.h>
+
+#include"Util.cpp"
+
+using namespace std;
+
+#define MAX_PATH 100    //工作路径名最大长度
+#define LINE_SIZE 128   //每次拷贝最大字节数
+
+/* 合并文件所在目录和文件名，获得文件路径 */
+   string getSourceFile(const char* path,const char* fileName){
+    string a=path;
+    string b=fileName;
+    return a+'/'+b;
+}
+/* 更新元数据，并返回struct stat */
+struct stat getStat(const char* path,const char* fileName){
+    struct stat fileData;
+    //这里使用lstat，若目标文件为软链接，则获取软连接文件stat，而非它指向的文件的stat
+    lstat(getSourceFile(path,fileName).c_str(),&fileData);
+    return fileData;
+}
+/* 输出文件stat信息 */
+void coutStat(const char* path,const char* fileName){
+    struct stat buf=getStat(path,fileName);
+    cout<<getSourceFile(path,fileName)<< "元数据: "<<endl;
+    cout<<"设备ID: "<<buf.st_dev<<endl;
+    cout<<"inode节点号: "<<buf.st_ino<<endl;
+    cout<<"文件类型和权限: "<<buf.st_mode<<endl;
+    cout<<"硬连接数: "<<buf.st_nlink<<endl;
+    cout<<"用户ID: "<<buf.st_uid<<endl;
+    cout<<"组ID: "<<buf.st_gid<<endl;
+    cout<<"特殊设备ID号: "<<buf.st_rdev<<endl;
+    cout<<"总字节数: "<<buf.st_size<<endl;
+    cout<<"IO块字节数: "<<buf.st_blksize<<endl;
+    cout<<"占用512b的block块的数量: "<<buf.st_blocks<<endl;
+    cout<<"最后访问时间: "<<buf.st_atim.tv_sec<<endl;
+    cout<<"最后修改时间: "<<buf.st_mtim.tv_sec<<endl;
+    cout<<"最后属性的修改时间: "<<buf.st_ctim.tv_sec<<endl;
+
+    if(S_ISREG(buf.st_mode)) cout<<"this is a regular file."<<endl;
+    if(S_ISDIR(buf.st_mode)) cout<<"this is a directory."<<endl;
+    if(S_ISCHR(buf.st_mode)) cout<<"this is a character device."<<endl;
+    if(S_ISBLK(buf.st_mode)) cout<<"this is a block device."<<endl;
+    if(S_ISFIFO(buf.st_mode)) cout<<"this is a FIFO (named pipe)."<<endl;
+    if(S_ISLNK(buf.st_mode)) cout<<"this is a symbolic link."<<endl;
+    if(S_ISSOCK(buf.st_mode)) cout<<"this is a socket."<<endl;
+}
+
+/* 若本文件不为文件夹，则删除 */
+int deleteFile(const char* path,const char* fileName){
+    struct stat buf=getStat(path,fileName);
+    string name=getSourceFile(path,fileName);
+    if(S_ISDIR(buf.st_mode)){
+        cout<<"this is a dir!"<<endl;
+        return -1;
+    }
+    if (remove(name.c_str())) {
+        cout<<name<<" 删除失败！"<<endl;
+        return -1;
+    }
+    else {
+        cout<<name<<" 删除成功！"<<endl;
+        return 0;
+    }
+}
+
+/* 若本文件为文件夹，则递归删除此文件夹, rm -r */
+int deleteDir(const char* path,const char* fileName){
+    int flag=0;
+    struct stat buf=getStat(path,fileName);
+    struct dirent *dirData= NULL;
+    DIR* dir;
+    string sourceFile=getSourceFile(path,fileName);
+    
+    if(sizeof(buf)<0||!S_ISDIR(buf.st_mode)){
+        cout<<sourceFile<<" is not a dir"<<endl;
+        return -1;
+    }
+
+    if(!(dir=opendir(sourceFile.c_str()))){
+        cout<<"fail to open "<<sourceFile<<endl;
+        return -1;
+    }
+
+    while((dirData=readdir(dir))!=NULL){
+        if (!(strncmp(dirData->d_name,".",1) && strncmp(dirData->d_name,".",2))){
+		    continue;//跳过父目录和工作路径和.bashrc
+	    }
+
+        string newpath=sourceFile;
+        string newFileName=dirData->d_name;
+        cout<<"now is dealing with: "<<getSourceFile(newpath.c_str(),newFileName.c_str())<<endl;
+        struct stat newStat=getStat(newpath.c_str(),newFileName.c_str());
+
+        if(S_ISDIR(newStat.st_mode)){//若该文件是目录
+            deleteDir(newpath.c_str(),newFileName.c_str());
+        }else{
+            deleteFile(newpath.c_str(),newFileName.c_str());
+        }
+    }
+    closedir(dir);
+        
+    if (rmdir(sourceFile.c_str())) {
+        cout<<sourceFile<<"删除失败！"<<endl;
+        return -1;
+    }
+    else {
+        cout<<sourceFile<<"删除成功！"<<endl;
+        return 0;
+    }
+}
+
+/* 通用rm -r，自动判断是否为文件 */
+int rm(const char* path,const char* fileName){
+    struct stat buf=getStat(path,fileName);
+    string name=getSourceFile(path,fileName);
+    if(!S_ISDIR(buf.st_mode)){
+        return deleteFile(path,fileName);
+    }
+    else{
+        return deleteDir(path,fileName);
+    }
+}
+
+/* 根据新的目录和新的文件名，在新目录下创建一个新文件，并把文件拷贝过去 */
+int copyNormailFile(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName){
+    createDirList(targetPath);//在复制文件/文件夹之前先创造路径
+    string sourceFile=getSourceFile(sourcePath,sourceFileName);
+    string targetFile=getSourceFile(targetPath,targetFileName);
+
+    char workPath[MAX_PATH];
+    //getcwd(workPath, MAX_PATH);//获得当前工作路径,用于写日志
+    struct stat fileData=getStat(sourcePath,sourceFileName);
+    int size = fileData.st_size;
+    cout<<"file size: "<<size<<endl;
+
+    if(!S_ISREG(fileData.st_mode)){
+        cout<<"this not a regular file!"<<endl;
+        return -1;
+    }
+
+    ofstream outFile;
+    ifstream inFile;
+    outFile.open(targetFile,ios::out|ios::binary|ios::trunc);
+    inFile.open(sourceFile,ios::in|ios::binary);
+    if(!inFile.is_open()){
+        cout<<"fail to open file: "<<sourceFile<<endl;
+        outFile.close();
+        inFile.close();
+        return -1;
+    }else{
+        cout<<"file: "<<sourceFile<<" opened!"<<endl;
+    }
+    if(!outFile.is_open()){
+      cout<<"fail to create file: "<<targetFile<<endl;
+        outFile.close();
+        inFile.close();
+        return -1;
+    }else{
+        cout<<"file: "<<targetFile<<" created!"<<endl;
+    }
+    outFile<<inFile.rdbuf();//输入流直接对输出流输出
+    cout<<"file: "<<targetFile<<" copy sucucess!"<<endl;
+    inFile.close();
+    outFile.close();
+    changeStat(targetFile.c_str(),fileData);
+    return 0;
+}
+
+/* 根据新的目录和新的目录名，在目标目录下创建一个新目录，并递归把所有文件拷贝过去 */
+int copyDir(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName){
+    createDirList(targetPath);//在复制文件/文件夹之前先创造路径
+    string sourceFile=getSourceFile(sourcePath,sourceFileName);
+    string targetFile=getSourceFile(targetPath,targetFileName);
+    struct dirent *dirData= NULL;
+    struct stat fileData=getStat(sourcePath,sourceFileName);
+    DIR* dir;
+    
+    if(sizeof(fileData)<0||!S_ISDIR(fileData.st_mode)){
+        cout<<sourceFile<<" is not a dir"<<endl;
+        return -1;
+    }
+
+    if(!(dir=opendir(sourceFile.c_str()))){
+        cout<<"fail to open "<<sourceFile<<endl;
+        return -1;
+    }
+    mkdir(targetFile.c_str(),fileData.st_mode);//创建文件夹
+    while((dirData=readdir(dir))!=NULL){
+        if (!(strncmp(dirData->d_name,".",1) && strncmp(dirData->d_name,".",2))){
+		    continue;//跳过父目录和工作路径和.bashrc
+	    }
+
+        string newSourcePath=sourceFile;
+        string newSourceFileName=dirData->d_name;
+        string newTargetPath=targetFile;
+        string newTargetFileName=dirData->d_name;
+        cout<<"now is dealing with: "<<getSourceFile(newSourcePath.c_str(),newSourceFileName.c_str())<<endl;
+        struct stat tmpStat=getStat(newSourcePath.c_str(),newSourceFileName.c_str());
+
+        if(S_ISDIR(tmpStat.st_mode)){//若该文件是目录
+            copyDir(newSourcePath.c_str(),dirData->d_name,newTargetPath.c_str(),dirData->d_name);
+        }else{
+            copyNormailFile(newSourcePath.c_str(),dirData->d_name,newTargetPath.c_str(),dirData->d_name);
+        }
+    }
+    closedir(dir);
+    changeStat(targetFile.c_str(),fileData);
+    return 0;
+}
+
+/*  */
+
+int main(){
+    char* sourcePath="/home/jgqj/source";
+    char* targetPath="/home/jgqj/target";
+    char* file1="floder";
+    char* file2="hard";
+
+    // // copyNormailfile测试
+    // copyNormailFile(sourcePath,file2,targetPath,file2);
+
+    // // copyDir测试
+    // copyDir(sourcePath,file1,targetPath,file1);
+
+    // // coutStat测试
+    // coutStat(sourcePath,file1);
+    // coutStat(targetPath,file1);
+
+    // // deleteFile测试
+    // coutStat(targetPath,file2);
+    // deleteFile(targetPath,file2);
+
+    // // deleteDir测试
+    // coutStat(targetPath,file1);
+    // deleteDir(targetPath,file1);
+
+    // // createDirList测试
+    // char* t="/home/jgqj/test1/test2/test3";
+    // createDirList(t);
+}

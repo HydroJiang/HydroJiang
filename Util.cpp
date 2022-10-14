@@ -6,6 +6,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <dirent.h>
 #include <unistd.h>
 
@@ -51,10 +52,20 @@ void createDirList(const char* sourcePath){
     }
 }
 
+void changeStat(const char* targetFile, const struct stat &s){
+    int flag;
+    flag=chmod(targetFile,s.st_mode);//同步权限
+    if(!flag) cout<<targetFile<<" chmod success!"<<endl;
+    flag=utimensat(0,targetFile,&(s.st_atim),0);//同步时间
+    if(!flag) cout<<targetFile<<" change time success!"<<endl;
+    
+}
+
 class Record{
 public:
     string sourcePath;
     string fileName;
+    struct stat s;
     Record* next;
     Record(){
         char workPath[MAX_PATH];  
