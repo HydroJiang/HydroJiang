@@ -317,6 +317,11 @@ public:
         if(i==length) return -1;
     }
 
+    /* file为private */
+    const struct recordLine& getLine(int index){
+        return file[index];
+    }
+
     /* 备份文件后，在record中加一行，并返回唯一序号 */
     int addRecord(const char* sourcePath,const char* fileName,struct stat s){
         struct recordLine temp;
