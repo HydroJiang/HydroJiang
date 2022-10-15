@@ -189,7 +189,7 @@ int copyContent(const char* sourcePath,const char* sourceFileName,const char* ta
 }
 
 struct recordLine{
-    int num;
+    int newFileNum;
     char sourcePath[MAX_PATH];
     char fileName[MAX_PATH];
     struct stat s;
@@ -291,11 +291,11 @@ public:
     /* 全部输出 */
     void coutRecord(){
         for(int i=0;i<this->file.size();i++){
-            cout<<"num: "<<this->file[i].num<<endl;
+            cout<<"newFileNum: "<<this->file[i].newFileNum<<endl;
             printStat(&file[i].s,getSourceFile(this->file[i].sourcePath,this->file[i].fileName));
         }
     }
-    /* 通过文件名和文件路径，搜索是否在其中，返回在链表中位置 */
+    /* 通过文件名和文件路径，搜索是否在其中，返回在链表中位置index */
     int getRecord(const char* sourcePath,const char* fileName){
         int i;
         int length=file.size();
@@ -306,12 +306,12 @@ public:
         if(i==length) return -1;
     }
 
-    /* 通过唯一序号，搜索是否在其中，返回在链表中位置 */
-    int getRecord(const int& num){
+    /* 通过唯一序号，搜索是否在其中，返回在链表中位置index */
+    int getRecord(const int& newFileNum){
         int i;
         int length=file.size();
         for(i=0;i<length;i++){
-            if(num==file[i].num)
+            if(newFileNum==file[i].newFileNum)
                 return i;
         }
         if(i==length) return -1;
@@ -322,20 +322,20 @@ public:
         return file[index];
     }
 
-    /* 备份文件后，在record中加一行，并返回唯一序号 */
+    /* 备份文件后，在record中加一行，并返回唯一序号newFileNum */
     int addRecord(const char* sourcePath,const char* fileName,struct stat s){
         struct recordLine temp;
         strcpy(temp.fileName,fileName);
         strcpy(temp.sourcePath,sourcePath);
         temp.s=s;
-        if(file.size()) temp.num=(file.end()-1)->num+1;
-        else temp.num=0;
+        if(file.size()) temp.newFileNum=(file.end()-1)->newFileNum+1;
+        else temp.newFileNum=0;
         this->file.push_back(temp);
         len++;
-        return temp.num;
+        return temp.newFileNum;
     }
 
-    /* 根据唯一序号删除文件，需要先调用getRecord获取唯一序号，注意先判断返回值是否为-1 */
+    /* 根据index删除文件，需要先调用getRecord获取index，注意先判断返回值是否为-1 */
     int rmRecord(int index){
         this->file.erase(file.begin()+index);
         if(len)len--;

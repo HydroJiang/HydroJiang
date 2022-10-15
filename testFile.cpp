@@ -75,10 +75,10 @@ int testNormal(){
     char* file3="test.docx";//docx
     char* file4="chain.heic";//图片
 
-    string num1=backUp(record,sourcePath,file1,targetPath,file1)+"";
-    string num2=backUp(record,sourcePath,file2,targetPath,file2)+"";
-    string num3=backUp(record,sourcePath,file3,targetPath,file3)+"";
-    string num4=backUp(record,sourcePath,file4,targetPath,file4)+"";
+    string num1=to_string(backUp(record,sourcePath,file1,targetPath,file1));
+    string num2=to_string(backUp(record,sourcePath,file2,targetPath,file2));
+    string num3=to_string(backUp(record,sourcePath,file3,targetPath,file3));
+    string num4=to_string(backUp(record,sourcePath,file4,targetPath,file4));
 
     cout<<file1<<" : "<<num1;
     cout<<file2<<" : "<<num2;
@@ -95,7 +95,8 @@ int testDir(){
     Record record;
     char* file1="floder";
 
-    string num1=backUp(record,sourcePath,file1,targetPath,file1)+"";
+    string num1=to_string(backUp(record,sourcePath,file1,targetPath,file1));
+
     cout<<file1<<" : "<<num1;
 
     cout<<putBack(record,otherPath,file1,targetPath,num1.c_str())<<endl;
@@ -105,7 +106,8 @@ int testLink(){
     Record record;
     char* file1="soft";
 
-    string num1=backUp(record,sourcePath,file1,targetPath,file1)+"";
+    string num1=to_string(backUp(record,sourcePath,file1,targetPath,file1));
+
     cout<<file1<<" : "<<num1;
 
     cout<<putBack(record,otherPath,file1,targetPath,num1.c_str())<<endl;
@@ -115,7 +117,8 @@ int testBlock(){
     Record record;
     char* file1="block";
 
-    string num1=backUp(record,sourcePath,file1,targetPath,file1)+"";
+    string num1=to_string(backUp(record,sourcePath,file1,targetPath,file1));
+
     cout<<file1<<" : "<<num1;
 
     cout<<putBack(record,otherPath,file1,targetPath,num1.c_str())<<endl;
@@ -125,7 +128,8 @@ int testFIFO(){
     Record record;
     char* file1="fifo";
 
-    string num1=backUp(record,sourcePath,file1,targetPath,file1)+"";
+    string num1=to_string(backUp(record,sourcePath,file1,targetPath,file1));
+
     cout<<file1<<" : "<<num1;
 
     cout<<putBack(record,otherPath,file1,targetPath,num1.c_str())<<endl;
@@ -135,7 +139,8 @@ int testSocket(){
     Record record;
     char* file1="socket";
 
-    string num1=backUp(record,sourcePath,file1,targetPath,file1)+"";
+    string num1=to_string(backUp(record,sourcePath,file1,targetPath,file1));
+
     cout<<file1<<" : "<<num1;
 
     cout<<putBack(record,otherPath,file1,targetPath,num1.c_str())<<endl;
