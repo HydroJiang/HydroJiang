@@ -100,6 +100,93 @@ int mksock (const char *__path, __mode_t __mode){
     return 0;
 }
 
+string getSourceFile(const char* path,const char* fileName){
+    string a=path;
+    string b=fileName;
+    return a+'/'+b;
+}
+/* 更新元数据，并返回struct stat */
+struct stat getStat(const char* path,const char* fileName){
+    struct stat fileData;
+    //这里使用lstat，若目标文件为软链接，则获取软连接文件stat，而非它指向的文件的stat
+    lstat(getSourceFile(path,fileName).c_str(),&fileData);
+    return fileData;
+}
+/* 输出文件stat信息 */
+void coutStat(const char* path,const char* fileName){
+    struct stat *buf=new struct stat;
+    if(lstat(getSourceFile(path,fileName).c_str(),buf)!=0) {
+        cout<<"didn't find file "<<getSourceFile(path,fileName)<<endl;
+        return;
+    }
+    cout<<getSourceFile(path,fileName)<< "元数据: "<<endl;
+    cout<<"设备ID: "<<buf->st_dev<<endl;
+    cout<<"inode节点号: "<<buf->st_ino<<endl;
+    cout<<"文件类型和权限: "<<buf->st_mode<<endl;
+    cout<<"硬连接数: "<<buf->st_nlink<<endl;
+    cout<<"用户ID: "<<buf->st_uid<<endl;
+    cout<<"组ID: "<<buf->st_gid<<endl;
+    cout<<"特殊设备ID号: "<<buf->st_rdev<<endl;
+    cout<<"总字节数: "<<buf->st_size<<endl;
+    cout<<"IO块字节数: "<<buf->st_blksize<<endl;
+    cout<<"占用512b的block块的数量: "<<buf->st_blocks<<endl;
+    cout<<"最后访问时间: "<<buf->st_atim.tv_sec<<endl;
+    cout<<"最后修改时间: "<<buf->st_mtim.tv_sec<<endl;
+    cout<<"最后属性的修改时间: "<<buf->st_ctim.tv_sec<<endl;
+
+    if(S_ISREG(buf->st_mode)) cout<<"this is a regular file."<<endl;
+    if(S_ISDIR(buf->st_mode)) cout<<"this is a directory."<<endl;
+    if(S_ISCHR(buf->st_mode)) cout<<"this is a character device."<<endl;
+    if(S_ISBLK(buf->st_mode)) cout<<"this is a block device."<<endl;
+    if(S_ISFIFO(buf->st_mode)) cout<<"this is a FIFO (named pipe)."<<endl;
+    if(S_ISLNK(buf->st_mode)) cout<<"this is a symbolic link."<<endl;
+    if(S_ISSOCK(buf->st_mode)) cout<<"this is a socket."<<endl;
+    delete(buf);
+}
+
+/* 比对2个stat是否相同，仅比对内容 */
+int cmpStat(const struct stat &a,const struct stat &b){
+    if(a.st_size!=b.st_size) return -1;
+    if((a.st_mode&S_IFMT)!=(b.st_mode&S_IFMT)) return -1;
+    return 0;
+}
+
+/* 复制两个文件内容，不管文件格式
+不可用于软链接复制，否则会覆盖链接指向文件的内容;
+不需要复制管道，因为它存不了东西; */
+int copyContent(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName){
+    string sourceFile=getSourceFile(sourcePath,sourceFileName);
+    string targetFile=getSourceFile(targetPath,targetFileName);
+    
+    ofstream outFile;
+    ifstream inFile;
+    outFile.open(targetFile,ios::out|ios::binary|ios::trunc);
+    inFile.open(sourceFile,ios::in|ios::binary);
+    if(!inFile.is_open()){
+        cout<<"fail to open file: "<<sourceFile<<endl;
+        outFile.close();
+        inFile.close();
+        return -1;
+    }else{
+        cout<<"file: "<<sourceFile<<" opened!"<<endl;
+    }
+    if(!outFile.is_open()){
+      cout<<"fail to create file: "<<targetFile<<endl;
+        outFile.close();
+        inFile.close();
+        return -1;
+    }else{
+        cout<<"file: "<<targetFile<<" created!"<<endl;
+    }
+    outFile<<inFile.rdbuf();//输入流直接对输出流输出
+    cout<<"file: "<<targetFile<<" copy sucucess!"<<endl;
+    inFile.close();
+    outFile.close();
+    return 0;
+}
+
+
+
 class Record{
 public:
     string sourcePath;
