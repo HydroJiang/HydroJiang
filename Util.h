@@ -15,11 +15,8 @@
 
 using namespace std;
 
-#define MAX_PATH 100    //工作路径名最大长度
+#define MAX_PATH 128    //工作路径名最大长度
 #define LINE_SIZE 128   //每次拷贝最大字节数
-
-string recordPath;
-int len;
 
 /* 将字符串s，以c为分隔符，分为部分塞到向量v中 */
 void split(const string& s, vector<string>& v, const string& c)
@@ -112,14 +109,10 @@ struct stat getStat(const char* path,const char* fileName){
     lstat(getSourceFile(path,fileName).c_str(),&fileData);
     return fileData;
 }
-/* 输出文件stat信息 */
-void coutStat(const char* path,const char* fileName){
-    struct stat *buf=new struct stat;
-    if(lstat(getSourceFile(path,fileName).c_str(),buf)!=0) {
-        cout<<"didn't find file "<<getSourceFile(path,fileName)<<endl;
-        return;
-    }
-    cout<<getSourceFile(path,fileName)<< "元数据: "<<endl;
+
+/* coutStat部分可重用代码 */
+void printStat(const struct stat *buf,const string &file){
+    cout<<file<< "元数据: "<<endl;
     cout<<"设备ID: "<<buf->st_dev<<endl;
     cout<<"inode节点号: "<<buf->st_ino<<endl;
     cout<<"文件类型和权限: "<<buf->st_mode<<endl;
@@ -141,9 +134,19 @@ void coutStat(const char* path,const char* fileName){
     if(S_ISFIFO(buf->st_mode)) cout<<"this is a FIFO (named pipe)."<<endl;
     if(S_ISLNK(buf->st_mode)) cout<<"this is a symbolic link."<<endl;
     if(S_ISSOCK(buf->st_mode)) cout<<"this is a socket."<<endl;
-    delete(buf);
 }
 
+/* 输出文件stat信息 */
+void coutStat(const char* path,const char* fileName){
+    struct stat *buf=new struct stat;
+    string name=getSourceFile(path,fileName);
+    if(lstat(name.c_str(),buf)!=0) {
+        cout<<"didn't find file "<<getSourceFile(path,fileName)<<endl;
+        return;
+    }
+    printStat(buf,name);
+    delete(buf);
+}
 /* 比对2个stat是否相同，仅比对内容 */
 int cmpStat(const struct stat &a,const struct stat &b){
     if(a.st_size!=b.st_size) return -1;
@@ -185,56 +188,215 @@ int copyContent(const char* sourcePath,const char* sourceFileName,const char* ta
     return 0;
 }
 
-
+struct recordLine{
+    int num;
+    char sourcePath[MAX_PATH];
+    char fileName[MAX_PATH];
+    struct stat s;
+};
 
 class Record{
+private:
+    string recordPath;
+    vector<struct recordLine> file;
+    int len;
+
+/*
+    void charToStat(struct stat& s,const string &str,const int &size){
+        int start=0;
+        s.st_dev=(dev_t)str.substr(start,sizeof(dev_t)).c_str();
+        start+=sizeof(dev_t);
+        s.st_ino=(ino_t)str.substr(start,sizeof(ino_t)).c_str();
+        start+=sizeof(ino_t);
+        s.st_mode=(mode_t)str.substr(start,sizeof(mode_t)).c_str();
+        start+=sizeof(mode_t);
+        s.st_nlink=(nlink_t)str.substr(start,sizeof(nlink_t)).c_str();
+        start+=sizeof(nlink_t);
+        s.st_uid=(uid_t)str.substr(start,sizeof(uid_t)).c_str();
+        start+=sizeof(uid_t);
+        s.st_gid=(gid_t)str.substr(start,sizeof(gid_t)).c_str();
+        start+=sizeof(gid_t);
+        s.st_rdev=(dev_t)str.substr(start,sizeof(dev_t)).c_str();
+        start+=sizeof(dev_t);
+        s.st_size=(off_t)str.substr(start,sizeof(off_t)).c_str();
+        start+=sizeof(off_t);
+        s.st_blksize=(blksize_t)str.substr(start,sizeof(blksize_t)).c_str();
+        start+=sizeof(blksize_t);
+        s.st_blocks=(blkcnt_t)str.substr(start,sizeof(blkcnt_t)).c_str();
+        start+=sizeof(blkcnt_t);
+        s.st_atim=(struct timespec)str.substr(start,sizeof(struct timespec)).c_str();
+        start+=sizeof(struct timespec);
+        s.st_mtim=(struct timespec)str.substr(start,sizeof(struct timespec)).c_str();
+        start+=sizeof(struct timespec);
+        s.st_ctim=(struct timespec)str.substr(start,sizeof(struct timespec)).c_str();
+        start+=sizeof(struct timespec);
+    }
+*/
+
+    /* 从本地record文件中获取记录信息,构造函数用 */
+    int readRecord(){
+        ifstream inFile;
+        inFile.open(recordPath,ios::in|ios::binary);
+        if(!inFile.is_open()){
+            cout<<"fail to open file: "<<recordPath<<endl;
+            inFile.close();
+            return -1;
+        }
+        this->len=0;
+        struct recordLine temp;
+        int count;
+        while(!inFile.eof()){
+            inFile.read(reinterpret_cast<char *>(&temp),sizeof(recordLine));
+            this->file.push_back(temp);
+            this->len++;
+        }
+        if(file.size()){
+            this->len--;
+            this->file.erase(file.end()-1);
+        }
+
+        cout<<"file: "<<recordPath<<" read! "<<endl;
+        return 0;
+    }
+    /* 写本地record文件,析构函数用 */
+    int writeRecord(){
+        ofstream outFile;
+        outFile.open(recordPath,ios::out|ios::binary|ios::trunc);
+        if(!outFile.is_open()){
+            cout<<"fail to open file: "<<recordPath<<endl;
+            outFile.close();
+            return -1;
+        }
+        struct recordLine temp;
+        for(int i=0;i<this->file.size();i++){
+            temp=this->file[i];
+            outFile.write(reinterpret_cast<char *>(&temp),sizeof(recordLine));
+        }
+        cout<<"file: "<<recordPath<<" write! "<<endl;
+        return 0;
+    }
+    
 public:
-    string sourcePath;
-    string fileName;
-    struct stat s;
-    Record* next;
     Record(){
         char workPath[MAX_PATH];  
         getcwd(workPath, MAX_PATH);//获得当前工作路径,用于写日志
-        recordPath=workPath;
-        recordPath=recordPath+"/record";
-        next=NULL;
+        this->recordPath=workPath;
+        this->recordPath+="/record";
+        readRecord();
     }
-    /* 从本地record文件中获取记录信息 */
-    void getRecord(){
-        char tmp[LINE_SIZE];
-        Record* node=this;
-        ifstream file;
-        file.open(recordPath,ios::in);
-        file.getline(tmp,LINE_SIZE);
-        len=atoi(tmp);
-        for(int i=0;i<len;i++){
-            vector<string> v;
-            file.getline(tmp,LINE_SIZE);
-            split(tmp,v," ");
-            node->sourcePath=v[0];
-            node->fileName=v[1];
-            node->next=new Record;
-            node=node->next;
-        }
-        delete node;//删除最后一个多余节点
+    ~Record(){
+        writeRecord();
     }
+    
     /* 全部输出 */
     void coutRecord(){
-        Record* node=this;
-        for(int i=0;i<len;i++){
-            cout<<node->sourcePath<<'/'<<node->fileName<<endl;
-            node=node->next;
+        for(int i=0;i<this->file.size();i++){
+            cout<<"num: "<<this->file[i].num<<endl;
+            printStat(&file[i].s,getSourceFile(this->file[i].sourcePath,this->file[i].fileName));
         }
     }
-    /* 搜索是否在其中，返回在链表中位置 */
-    int isInRecord(const char* sourcePath,const char* fileName){
-        for(int i=0;i<len;i++){
-
+    /* 通过文件名和文件路径，搜索是否在其中，返回在链表中位置 */
+    int getRecord(const char* sourcePath,const char* fileName){
+        int i;
+        int length=file.size();
+        for(i=0;i<length;i++){
+            if(!strcmp(file[i].sourcePath,sourcePath)&&!strcmp(file[i].fileName,fileName))
+                return i;
         }
+        if(i==length) return -1;
+    }
+
+    /* 通过唯一序号，搜索是否在其中，返回在链表中位置 */
+    int getRecord(const int& num){
+        int i;
+        int length=file.size();
+        for(i=0;i<length;i++){
+            if(num==file[i].num)
+                return i;
+        }
+        if(i==length) return -1;
+    }
+
+    /* 备份文件后，在record中加一行，并返回唯一序号 */
+    int addRecord(const char* sourcePath,const char* fileName,struct stat s){
+        struct recordLine temp;
+        strcpy(temp.fileName,fileName);
+        strcpy(temp.sourcePath,sourcePath);
+        temp.s=s;
+        if(file.size()) temp.num=(file.end()-1)->num+1;
+        else temp.num=0;
+        this->file.push_back(temp);
+        len++;
+        return temp.num;
+    }
+
+    /* 根据唯一序号删除文件，需要先调用getRecord获取唯一序号，注意先判断返回值是否为-1 */
+    int rmRecord(int index){
+        this->file.erase(file.begin()+index);
+        if(len)len--;
+        else {
+            cout<<"error!"<<endl;
+            return -1;
+        }
+        return 0;
     }
 };
 
+/* 测试函数 */
+void add1234(){
+    Record record;
+    char* path1="/home/jgqj/source";
+    char* path2="/home/jgqj/target";
+    char* file1="test.docx";
+    char* file2="hard";
+    char* file3="hello_world";    
+    char* file4="hello_world.cpp"; 
+
+    record.addRecord(path1,file1,getStat(path1,file1));   
+    record.addRecord(path1,file2,getStat(path1,file2));   
+    record.addRecord(path1,file3,getStat(path1,file3));   
+    record.addRecord(path1,file4,getStat(path1,file4));   
+
+    record.coutRecord();
+
+}
+/* 测试函数 */
+int rm3(){
+    Record record;
+    char* path1="/home/jgqj/source";
+    char* path2="/home/jgqj/target";
+    char* file1="test.docx";
+    char* file2="hard";
+    char* file3="hello_world";    
+    char* file4="hello_world.cpp"; 
+
+    record.coutRecord();
+    record.rmRecord(record.getRecord(path1,file3));
+    record.coutRecord();
+}
+/* 测试函数 */
+int add4(){
+    Record record;
+    char* path1="/home/jgqj/source";
+    char* path2="/home/jgqj/target";
+    char* file1="test.docx";
+    char* file2="hard";
+    char* file3="hello_world";    
+    char* file4="hello_world.cpp"; 
+
+    record.coutRecord(); 
+    record.addRecord(path1,file4,getStat(path1,file4));   
+    record.coutRecord(); 
+}
+
 // int main(){
-//     cout<<mknod("/home/jgqj/source/block/demo",33188,0);
+//     remove("record");
+//     cout<<"add1234"<<endl<<endl;
+//     add1234();
+//     cout<<"rm3"<<endl<<endl;
+//     rm3();
+//     cout<<"add4"<<endl<<endl;
+//     add4();
+
+
 // }

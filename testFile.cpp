@@ -12,7 +12,7 @@
 
 using namespace std;
 
-int main(){
+int FileTest(){
     char* sourcePath="/home/jgqj/source";
     char* targetPath="/home/jgqj/target";
     char* file1="floder";
@@ -62,4 +62,13 @@ int main(){
 
     // // cmp test
     // cout<<cmp(sourcePath,file1,targetPath,file1)<<endl;
+}
+
+int main(){
+    char* sourcePath="/home/jgqj/source";
+    char* targetPath="/home/jgqj/target";
+    char* file1="floder";
+    char* file2="floder";
+
+    
 }
