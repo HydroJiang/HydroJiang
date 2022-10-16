@@ -30,7 +30,7 @@ int backUp(Record &record,const char* sourcePath,const char* sourceFileName,cons
     return cpWriteRecord(record,sourcePath,sourceFileName,targetPath,targetFileName);
 }
 
-/* sourcePath为要源文件路径，为空的时候返回备份路径，可以指定。targetPath为备份文件路径 */
+/* sourcePath为备份文件路径     targetPath为恢复路径，可以为空，为空的时候默认源路径 */
 int putBack(Record &record,const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName){
     // int newFileNum=atoi(targetFileName);//备份文件名为唯一序列号
     // int index=record.getRecord(newFileNum);
@@ -57,22 +57,9 @@ int putBack(Record &record,const char* sourcePath,const char* sourceFileName,con
     return cpReadRecord(record,sourcePath,sourceFileName,targetPath,targetFileName);
 }
 
-/* sourcePath为要源文件路径，为空的时候默认备份路径，可以指定。targetPath为备份文件路径 */
-int compareFile(Record &record,const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName){
-    int newFileNum=atoi(targetFileName);//备份文件名为唯一序列号
-    int index=record.getRecord(newFileNum);
-    if(index==-1){//不存在于记录中,先复制再增加记录，先删除文件再删除记录，不可能出现这种情况
-        cout<<"palceholder"<<endl;
-        return -1;
-    }
-    struct recordLine fileData=record.getLine(index);
-    string restorePath=fileData.sourcePath;
-    string restoreFileName=fileData.fileName;
-    if(sourceFileName!=NULL){//指定恢复文件名
-        restoreFileName=sourceFileName;
-    }
-    if(sourcePath!=NULL){//指定恢复路径
-        restorePath=sourcePath;
-    }
-    return cmp(targetPath,targetFileName,restorePath.c_str(),restoreFileName.c_str());//反馈信息由cmp输出
+/* sourcePath为备份文件路径     自动获取targetpath */
+int compareFile(Record &record,const char* sourcePath,const char* sourceFileName){
+
+    return cmpReadRecord(record,sourcePath,sourceFileName);//反馈信息由cmp输出
+
 }

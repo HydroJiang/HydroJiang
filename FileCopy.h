@@ -421,7 +421,7 @@ int cpReadRecord(Record &record,const char* sourcePath,const char* sourceFileNam
             cout<<"还原失败！路径："<<getSourceFile(restorePath.c_str(),restoreFileName.c_str())<<endl;
             return -1;
         }
-    }
+    } 
     changeStat(getSourceFile(restorePath.c_str(),restoreFileName.c_str()).c_str(),fileData.s);
     cout<<"还原成功！路径："<<getSourceFile(restorePath.c_str(),restoreFileName.c_str())<<endl;
     return 0;

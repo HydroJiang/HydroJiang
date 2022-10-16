@@ -13,6 +13,7 @@
 using namespace std;
 
 int cmp(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName);
+int cmpReadRecord(Record &record,const char* sourcePath,const char* sourceFileName);
 
 int cmpNormailFile(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName){
     string sourceFile=getSourceFile(sourcePath,sourceFileName);
@@ -25,17 +26,21 @@ int cmpNormailFile(const char* sourcePath,const char* sourceFileName,const char*
     struct stat sourceStat=getStat(sourcePath,sourceFileName);
     struct stat targetStat=getStat(targetPath,targetFileName);
 
-    if(!S_ISREG(sourceStat.st_mode)){
+    if(S_ISDIR(sourceStat.st_mode)){
         cout<<sourceFile<<" is not a regular file!"<<endl;
         return -1;
     }
-    if(!S_ISREG(targetStat.st_mode)){
+    if(S_ISDIR(targetStat.st_mode)){
         cout<<targetFile<<" is not a regular file!"<<endl;
         return -1;
     }
     if(cmpStat(sourceStat,targetStat)){
         cout<<"file stat differs."<<endl;
         return -1;
+    }
+    if(!S_ISREG(sourceStat.st_mode)){
+        cout<<sourceFile<<"this is a special file! stat same!"<<endl;
+        return 0;//特殊文件只比对stat
     }
 
     ifstream inFile,outFile;
@@ -86,11 +91,11 @@ int cmpNormailFile(const char* sourcePath,const char* sourceFileName,const char*
 int cmpDir(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName){
     string sourceFile=getSourceFile(sourcePath,sourceFileName);
     string targetFile=getSourceFile(targetPath,targetFileName);
-    struct dirent *dirData1= NULL;
+    struct dirent *dirData= NULL;
     struct dirent *dirData2= NULL;
     struct stat fileData1=getStat(sourcePath,sourceFileName);
     struct stat fileData2=getStat(targetPath,targetFileName);
-    DIR* dir1;
+    DIR* dir;
     DIR* dir2;
     
     if(sizeof(fileData1)<0||!S_ISDIR(fileData1.st_mode)){
@@ -102,7 +107,7 @@ int cmpDir(const char* sourcePath,const char* sourceFileName,const char* targetP
         return -1;
     }
 
-    if(!(dir1=opendir(sourceFile.c_str()))){
+    if(!(dir=opendir(sourceFile.c_str()))){
         cout<<"fail to open "<<sourceFile<<endl;
         return -1;
     }
@@ -117,22 +122,22 @@ int cmpDir(const char* sourcePath,const char* sourceFileName,const char* targetP
     }
 
     while(true){//不能用||判断2个条件，否则第一个条件为真不会执行第2个
-        dirData1=readdir(dir1);
+        dirData=readdir(dir);
         dirData2=readdir(dir2);
-        if(dirData1==NULL&&dirData2==NULL){
+        if(dirData==NULL&&dirData2==NULL){
             //都遍历完
             break;
         }
-        if((dirData1==NULL&&dirData2!=NULL)||(dirData1!=NULL&&dirData2==NULL)){
+        if((dirData==NULL&&dirData2!=NULL)||(dirData!=NULL&&dirData2==NULL)){
             cout<<"some file missing, dir differs"<<endl;
             return -1;
         }
-        if ((!(strncmp(dirData1->d_name,".",1) && strncmp(dirData1->d_name,".",2)))||(!(strncmp(dirData2->d_name,".",1) && strncmp(dirData2->d_name,".",2)))){
+        if ((!(strncmp(dirData->d_name,".",1) && strncmp(dirData->d_name,".",2)))||(!(strncmp(dirData2->d_name,".",1) && strncmp(dirData2->d_name,".",2)))){
 		    continue;
 	    }
 
         string newSourcePath=sourceFile;
-        string newSourceFileName=dirData1->d_name;
+        string newSourceFileName=dirData->d_name;
         string newTargetPath=targetFile;
         string newTargetFileName=dirData2->d_name;
         cout<<"now is dealing with: "<<getSourceFile(newSourcePath.c_str(),newSourceFileName.c_str())<<endl;
@@ -142,19 +147,19 @@ int cmpDir(const char* sourcePath,const char* sourceFileName,const char* targetP
 
         if(cmpStat(tmpStat1,tmpStat2)){
             cout<<newSourcePath+'/'+newSourceFileName<<" and "<<newTargetPath+'/'+newTargetFileName<<" differs. "<<endl;
-            closedir(dir1);
+            closedir(dir);
             closedir(dir2);
             return -1;
         }
 
-        if(cmp(newSourcePath.c_str(),dirData1->d_name,newTargetPath.c_str(),dirData1->d_name)){
+        if(cmp(newSourcePath.c_str(),dirData->d_name,newTargetPath.c_str(),dirData->d_name)){
             cout<<newSourcePath+'/'+newSourceFileName<<" and "<<newTargetPath+'/'+newTargetFileName<<" differs. "<<endl;
-            closedir(dir1);
+            closedir(dir);
             closedir(dir2);
             return -1;
         }
     }
-    closedir(dir1);
+    closedir(dir);
     closedir(dir2);
     cout<<"dir "<<sourceFile<<" and "<<targetFile<<" are the same!"<<endl;
     return 0;
@@ -180,4 +185,92 @@ int cmp(const char* sourcePath,const char* sourceFileName,const char* targetPath
         }
     }
 
+}
+
+int cmpDirReadRecord(Record &record,const char* sourcePath,const char* sourceFileName){
+    int newFileNum=atoi(sourceFileName);//备份文件名为唯一序列号
+    int index=record.getRecord(newFileNum);
+    if(index==-1){//不存在于记录中  不可能出现这种情况
+        cout<<"palceholder"<<endl;
+        return -1;
+    }
+    struct recordLine fileData=record.getLine(index);
+    const char* targetPath=fileData.sourcePath;//获取源文件路径
+    const char* targetFileName=fileData.fileName;
+
+    string sourceFile=getSourceFile(sourcePath,sourceFileName);
+    string targetFile=getSourceFile(targetPath,targetFileName);
+    struct dirent *dirData= NULL;
+    struct stat fileData1=getStat(sourcePath,sourceFileName);
+    struct stat fileData2=getStat(targetPath,targetFileName);
+    DIR* dir;
+    
+    if(sizeof(fileData1)<0||!S_ISDIR(fileData1.st_mode)){
+        cout<<sourceFile<<" is not a dir"<<endl;
+        return -1;
+    }
+    if(sizeof(fileData2)<0||!S_ISDIR(fileData2.st_mode)){
+        cout<<targetFile<<" is not a dir"<<endl;
+        return -1;
+    }
+
+    if(!(dir=opendir(sourceFile.c_str()))){
+        cout<<"fail to open "<<sourceFile<<endl;
+        return -1;
+    }
+
+    if(cmpStat(fileData1,fileData2)){
+        cout<<"dir stat differs."<<endl;
+        return -1;
+    }
+
+    while((dirData=readdir(dir))!=NULL){//不能用||判断2个条件，否则第一个条件为真不会执行第2个
+        if (!(strncmp(dirData->d_name,".",1) && strncmp(dirData->d_name,".",2))){
+		    continue;
+	    }
+
+        const char* newSourcePath=sourceFile.c_str();
+        const char* newSourceFileName=dirData->d_name;
+
+        if(cmpReadRecord(record,newSourcePath,newSourceFileName)){
+            closedir(dir);
+            cout<<"dir "<<sourceFile<<" and "<<targetFile<<" are different!"<<endl;
+            return -1;
+        }
+    }
+    closedir(dir);
+    cout<<"dir "<<sourceFile<<" and "<<targetFile<<" are the same!"<<endl;
+    return 0;
+}
+
+int cmpReadRecord(Record &record,const char* sourcePath,const char* sourceFileName){
+    int newFileNum=atoi(sourceFileName);//备份文件名为唯一序列号
+    int index=record.getRecord(newFileNum);
+    if(index==-1){//不存在于记录中  不可能出现这种情况
+        cout<<"palceholder"<<endl;
+        return -1;
+    }
+    struct recordLine fileData=record.getLine(index);
+    const char* targetPath=fileData.sourcePath;//获取源文件路径
+    const char* targetFileName=fileData.fileName;
+    
+    string sourceFile=getSourceFile(sourcePath,sourceFileName);
+    string targetFile=getSourceFile(targetPath,targetFileName);
+    struct stat fileData1=getStat(sourcePath,sourceFileName);
+    struct stat fileData2=getStat(targetPath,targetFileName);
+
+    if(cmpStat(fileData1,fileData2)){
+        cout<<"stat differs."<<endl;
+        return -1;
+    }
+    if(S_ISDIR(fileData1.st_mode)&&S_ISDIR(fileData2.st_mode)){
+        if(cmpDirReadRecord(record,sourcePath,sourceFileName)){
+            return -1;
+        }
+    }else{
+        if(cmpNormailFile(sourcePath,sourceFileName,targetPath,targetFileName)){
+            return -1;
+        }
+    }
+    return 0;
 }

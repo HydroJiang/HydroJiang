@@ -73,7 +73,7 @@ int testNormal(){
     char* file1="hello_world.cpp";//cpp
     char* file2="hello_world";//可执行文件
     char* file3="test.docx";//docx
-    char* file4="chain.heic";//图片
+    char* file4="0.png";//图片
 
     string num1=to_string(backUp(record,sourcePath,file1,targetPath,file1));
     string num2=to_string(backUp(record,sourcePath,file2,targetPath,file2));
@@ -89,6 +89,12 @@ int testNormal(){
     cout<<putBack(record,targetPath,num2.c_str(),otherPath,file2)<<endl;
     cout<<putBack(record,targetPath,num3.c_str(),otherPath,file3)<<endl;
     cout<<putBack(record,targetPath,num4.c_str(),otherPath,file4)<<endl;
+
+    //用法：在这里打断点,并修改已备份文件
+    cout<<compareFile(record,targetPath,num1.c_str())<<endl;
+    cout<<compareFile(record,targetPath,num2.c_str())<<endl;
+    cout<<compareFile(record,targetPath,num3.c_str())<<endl;
+    cout<<compareFile(record,targetPath,num4.c_str())<<endl;
 }
 
 int testDir(){
@@ -100,6 +106,8 @@ int testDir(){
     cout<<file1<<" : "<<num1;
 
     cout<<putBack(record,targetPath,num1.c_str(),otherPath,file1)<<endl;
+    //用法：在这里打断点,并修改已备份文件
+    cout<<compareFile(record,targetPath,num1.c_str())<<endl;
 }
 
 int testLink(){
@@ -111,6 +119,7 @@ int testLink(){
     cout<<file1<<" : "<<num1;
 
     cout<<putBack(record,targetPath,num1.c_str(),otherPath,file1)<<endl;
+    cout<<compareFile(record,targetPath,num1.c_str())<<endl;
 }
 
 int testBlock(){
@@ -122,6 +131,7 @@ int testBlock(){
     cout<<file1<<" : "<<num1;
 
     cout<<putBack(record,targetPath,num1.c_str(),otherPath,file1)<<endl;
+    cout<<compareFile(record,targetPath,num1.c_str())<<endl;
 }
 
 int testFIFO(){
@@ -133,6 +143,7 @@ int testFIFO(){
     cout<<file1<<" : "<<num1;
 
     cout<<putBack(record,targetPath,num1.c_str(),otherPath,file1)<<endl;
+    cout<<compareFile(record,targetPath,num1.c_str())<<endl;
 }
 
 int testSocket(){
@@ -144,8 +155,9 @@ int testSocket(){
     cout<<file1<<" : "<<num1;
 
     cout<<putBack(record,targetPath,num1.c_str(),otherPath,file1)<<endl;
+    cout<<compareFile(record,targetPath,num1.c_str())<<endl;
 }
 
 int main(){
-    
+    testLink();
 }
