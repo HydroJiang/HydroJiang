@@ -84,7 +84,6 @@ int deleteDir(const char* path,const char* fileName){
 /* 通用rm -r，自动判断文件类型 */
 int rm(const char* path,const char* fileName){
     struct stat buf=getStat(path,fileName);
-    string name=getSourceFile(path,fileName);
     if(!S_ISDIR(buf.st_mode)){
         return deleteFile(path,fileName);
     }

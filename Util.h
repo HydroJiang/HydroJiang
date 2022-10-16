@@ -193,6 +193,7 @@ struct recordLine{
     char sourcePath[MAX_PATH];
     char fileName[MAX_PATH];
     struct stat s;
+    struct timespec backUpTime;
 };
 
 class Record{
@@ -258,7 +259,20 @@ private:
         cout<<"file: "<<recordPath<<" read! "<<endl;
         return 0;
     }
-    /* 写本地record文件,析构函数用 */
+    
+public:
+    Record(){
+        char workPath[MAX_PATH];  
+        getcwd(workPath, MAX_PATH);//获得当前工作路径,用于写日志
+        this->recordPath=workPath;
+        this->recordPath+="/record";
+        readRecord();
+    }
+    ~Record(){
+        writeRecord();
+    }
+
+    /* 写本地record文件,备份完文件用 */
     int writeRecord(){
         ofstream outFile;
         outFile.open(recordPath,ios::out|ios::binary|ios::trunc);
@@ -274,18 +288,6 @@ private:
         }
         cout<<"file: "<<recordPath<<" write! "<<endl;
         return 0;
-    }
-    
-public:
-    Record(){
-        char workPath[MAX_PATH];  
-        getcwd(workPath, MAX_PATH);//获得当前工作路径,用于写日志
-        this->recordPath=workPath;
-        this->recordPath+="/record";
-        readRecord();
-    }
-    ~Record(){
-        writeRecord();
     }
     
     /* 全部输出 */
@@ -328,6 +330,7 @@ public:
         strcpy(temp.fileName,fileName);
         strcpy(temp.sourcePath,sourcePath);
         temp.s=s;
+        clock_gettime(CLOCK_REALTIME, &temp.backUpTime);//备份文件时，自动获取当前系统时间
         if(file.size()) temp.newFileNum=(file.end()-1)->newFileNum+1;
         else temp.newFileNum=0;
         this->file.push_back(temp);
@@ -402,6 +405,4 @@ int add4(){
 //     rm3();
 //     cout<<"add4"<<endl<<endl;
 //     add4();
-
-
 // }

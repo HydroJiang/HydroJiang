@@ -15,7 +15,12 @@ using namespace std;
 #define MAX_PATH 100    //工作路径名最大长度
 #define LINE_SIZE 128   //每次拷贝最大字节数
 
+#define WRITE_RECORD true       //标志位
+#define NOT_WRITE_RECORD false
+
 int cp(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName);
+int cpWriteRecord(Record &record,const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName);
+int cpReadRecord(Record &record,const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName);
 
 /* 根据新的目录和新的文件名，在新目录下创建一个新文件，并把普通文件拷贝过去 */
 int copyNormailFile(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName){
@@ -35,7 +40,6 @@ int copyNormailFile(const char* sourcePath,const char* sourceFileName,const char
     }
     
     return copyContent(sourcePath,sourceFileName,targetPath,targetFileName);
-    changeStat(targetFile.c_str(),fileData);
 }
 
 /* 根据新的目录和新的目录名，在目标目录下创建一个新目录，并递归把所有文件拷贝过去 */
@@ -72,7 +76,6 @@ int copyDir(const char* sourcePath,const char* sourceFileName,const char* target
         cp(newSourcePath.c_str(),dirData->d_name,newTargetPath.c_str(),dirData->d_name);
     }
     closedir(dir);
-    changeStat(targetFile.c_str(),fileData);
     return 0;
 }
 
@@ -114,7 +117,7 @@ int copyLink(const char* sourcePath,const char* sourceFileName,const char* targe
     if(symlink(linkPath,targetFile.c_str())==0){
         //无需复制内容，软链接内容即为路径
         cout<<targetFile<<" copy success!"<<endl;
-        changeStat(targetFile.c_str(),fileData);
+        // changeStat(targetFile.c_str(),fileData);
         return 0;
     }
     else{
@@ -153,7 +156,7 @@ int copyPipe(const char* sourcePath,const char* sourceFileName,const char* targe
         cout<<targetFile<<" copy success!"<<endl;
         //试试在管道文件尾部增加内容，再试试进程通讯
         //管道文件存不了东西
-        changeStat(targetFile.c_str(),fileData);
+        // changeStat(targetFile.c_str(),fileData);
         truncate(targetFile.c_str(), fileData.st_size);
         return 0;
     }
@@ -191,7 +194,7 @@ int copyDev(const char* sourcePath,const char* sourceFileName,const char* target
 
     if(mknod(targetFile.c_str(),fileData.st_mode,fileData.st_rdev)==0){
         cout<<targetFile<<" copy success!"<<endl;
-        changeStat(targetFile.c_str(),fileData);
+        // changeStat(targetFile.c_str(),fileData);
         truncate(targetFile.c_str(), fileData.st_size);
         return 0;
     }
@@ -225,7 +228,7 @@ int copySocket(const char* sourcePath,const char* sourceFileName,const char* tar
 
     if(mksock(targetFile.c_str(),fileData.st_mode)==0){
         cout<<targetFile<<" copy success!"<<endl;
-        changeStat(targetFile.c_str(),fileData);
+        // changeStat(targetFile.c_str(),fileData);
         truncate(targetFile.c_str(), fileData.st_size);
         return 0;
     }
@@ -235,35 +238,191 @@ int copySocket(const char* sourcePath,const char* sourceFileName,const char* tar
     }
 }
 
-/* cp,自动判断文件类型进行复制 */
-int cp(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName){
+/* copy除了dir外所有文件类型 */
+int copyOtherFile(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName){
     struct stat fileData=getStat(sourcePath,sourceFileName);
     mode_t mode=fileData.st_mode;
-    string sourceFile=getSourceFile(sourcePath,sourceFileName);
-    string targetFile=getSourceFile(targetPath,targetFileName);
     int flag=0;
 
     if(S_ISREG(mode)){
         flag=copyNormailFile(sourcePath,sourceFileName,targetPath,targetFileName);
-        changeStat(targetFile.c_str(),fileData);
-    }else if(S_ISDIR(mode)){
-        flag=copyDir(sourcePath,sourceFileName,targetPath,targetFileName);
-        changeStat(targetFile.c_str(),fileData);
+        // changeStat(targetFile.c_str(),fileData);
     }else if(S_ISCHR(mode)||S_ISBLK(mode)){
         flag=copyDev(sourcePath,sourceFileName,targetPath,targetFileName);
-        changeStat(targetFile.c_str(),fileData);
+        // changeStat(targetFile.c_str(),fileData);
     }else if(S_ISFIFO(mode)){
         flag=copyPipe(sourcePath,sourceFileName,targetPath,targetFileName);
-        changeStat(targetFile.c_str(),fileData);
+        // changeStat(targetFile.c_str(),fileData);
     }else if(S_ISLNK(mode)){
         flag=copyLink(sourcePath,sourceFileName,targetPath,targetFileName);
-        changeStat(targetFile.c_str(),fileData);
+        // changeStat(targetFile.c_str(),fileData);
     }else if(S_ISSOCK(mode)){
         flag=copySocket(sourcePath,sourceFileName,targetPath,targetFileName);
-        changeStat(targetFile.c_str(),fileData);
+        // changeStat(targetFile.c_str(),fileData);
     }else{
         cout<<"unkown file type, unable to copy."<<endl;
         flag=-1;
     }
     return flag;
+}
+
+/* cp,自动判断文件类型进行复制 */
+int cp(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName){
+    struct stat fileData=getStat(sourcePath,sourceFileName);
+    if(S_ISDIR(fileData.st_mode)){
+        return copyDir(sourcePath,sourceFileName,targetPath,targetFileName);
+    }else{
+        return copyOtherFile(sourcePath,sourceFileName,targetPath,targetFileName);
+    }
+}
+
+/* 根据新的目录和新的目录名，在目标目录下创建一个新目录，并递归把所有文件拷贝过去 */
+int copyDirWriteRecord(Record &record,const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName){
+    createDirList(targetPath);//在复制文件/文件夹之前先创造路径
+    string sourceFile=getSourceFile(sourcePath,sourceFileName);
+    string targetFile=getSourceFile(targetPath,targetFileName);
+    struct dirent *dirData= NULL;
+    struct stat fileData=getStat(sourcePath,sourceFileName);
+    DIR* dir;
+    
+    if(sizeof(fileData)<0||!S_ISDIR(fileData.st_mode)){
+        cout<<sourceFile<<" is not a dir"<<endl;
+        return -1;
+    }
+
+    if(!(dir=opendir(sourceFile.c_str()))){
+        cout<<"fail to open "<<sourceFile<<endl;
+        return -1;
+    }
+
+    mkdir(targetFile.c_str(),fileData.st_mode);//创建文件夹
+    while((dirData=readdir(dir))!=NULL){
+        if (!(strncmp(dirData->d_name,".",1) && strncmp(dirData->d_name,".",2))){
+		    continue;//跳过父目录和工作路径和.bashrc
+	    }
+
+        string newSourcePath=sourceFile;
+        string newSourceFileName=dirData->d_name;
+        string newTargetPath=targetFile;
+        string newTargetFileName=dirData->d_name;
+        cout<<"now is dealing with: "<<getSourceFile(newSourcePath.c_str(),newSourceFileName.c_str())<<endl;
+        struct stat tmpStat=getStat(newSourcePath.c_str(),newSourceFileName.c_str());
+
+        //仅修改这个地方
+        cpWriteRecord(record,newSourcePath.c_str(),dirData->d_name,newTargetPath.c_str(),dirData->d_name);
+    }
+    closedir(dir);
+    return 0;
+}
+
+/* 复制的同时写record */
+int cpWriteRecord(Record &record,const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName){
+    struct stat fileData=getStat(sourcePath,sourceFileName);
+    int newFileNum=record.addRecord(sourcePath,sourceFileName,fileData);//先加记录获取唯一序列号
+    string strNewFileNum=to_string(newFileNum);
+    if(S_ISDIR(fileData.st_mode)){
+        if(copyDirWriteRecord(record,sourcePath,sourceFileName,targetPath,strNewFileNum.c_str())){
+            record.rmRecord(newFileNum);//复制失败，删除record新增行
+            cout<<"复制现有记录失败！"<<endl;
+            return -1;
+        }
+    }else{
+        if(copyOtherFile(sourcePath,sourceFileName,targetPath,strNewFileNum.c_str())){
+            record.rmRecord(newFileNum);//复制失败，删除record新增行
+            cout<<"复制现有记录失败！"<<endl;
+            return -1;
+        }
+    }
+    cout<<"back up success! back-up file: "<<newFileNum<<endl;
+    changeStat(getSourceFile(targetPath,strNewFileNum.c_str()).c_str(),fileData);
+    return newFileNum;//返回文件名，方便后续压缩、加密
+}
+
+/* 根据新的目录和新的目录名，在目标目录下创建一个新目录，并递归把所有文件拷贝过去 */
+int copyDirReadRecord(Record &record,const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName){
+    createDirList(targetPath);//在复制文件/文件夹之前先创造路径
+    int newFileNum=atoi(sourceFileName);//备份文件名为唯一序列号
+    int index=record.getRecord(newFileNum);
+    if(index==-1){//不存在于记录中,先复制再增加记录，先删除文件再删除记录，不可能出现这种情况
+        cout<<"palceholder"<<endl;
+        return -1;
+    }
+    struct recordLine fileData=record.getLine(index);
+    string restorePath=fileData.sourcePath;
+    string restoreFileName=fileData.fileName;
+    if(targetFileName!=NULL){//指定恢复文件名
+        restoreFileName=targetFileName;
+    }
+    if(targetPath!=NULL){//指定恢复路径
+        restorePath=targetPath;
+    }
+
+    string sourceFile=getSourceFile(sourcePath,sourceFileName);
+    string targetFile=getSourceFile(restorePath.c_str(),restoreFileName.c_str());
+
+    struct dirent *dirData= NULL;
+    DIR* dir;
+    
+    if(sizeof(fileData.s)<0||!S_ISDIR(fileData.s.st_mode)){
+        cout<<sourceFile<<" is not a dir"<<endl;
+        return -1;
+    }
+
+    if(!(dir=opendir(sourceFile.c_str()))){
+        cout<<"fail to open "<<sourceFile<<endl;
+        return -1;
+    }
+
+    mkdir(targetFile.c_str(),fileData.s.st_mode);//创建文件夹
+    while((dirData=readdir(dir))!=NULL){
+        if (!(strncmp(dirData->d_name,".",1) && strncmp(dirData->d_name,".",2))){
+		    continue;//跳过父目录和工作路径和.bashrc
+	    }
+
+        string newSourcePath=sourceFile;
+        string newSourceFileName=dirData->d_name;
+        int sonName=atoi(dirData->d_name);//子文件的唯一序列号
+        int sonIndex=record.getRecord(sonName);
+        struct recordLine sonFileData=record.getLine(sonIndex);
+        string newTargetPath=targetFile;
+        string newTargetFileName=sonFileData.fileName;//文件夹下文件无法指定名字，默认为原文件名
+        cout<<"now is dealing with: "<<getSourceFile(newSourcePath.c_str(),newSourceFileName.c_str())<<endl;
+
+        cpReadRecord(record,newSourcePath.c_str(),newSourceFileName.c_str(),newTargetPath.c_str(),newTargetFileName.c_str());
+    }
+    closedir(dir);
+    return 0;
+}
+
+/* 读record来还原文件 */
+int cpReadRecord(Record &record,const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName){
+    int newFileNum=atoi(sourceFileName);//备份文件名为唯一序列号
+    int index=record.getRecord(newFileNum);
+    if(index==-1){//不存在于记录中,先复制再增加记录，先删除文件再删除记录，不可能出现这种情况
+        cout<<"palceholder"<<endl;
+        return -1;
+    }
+    struct recordLine fileData=record.getLine(index);
+    string restorePath=fileData.sourcePath;
+    string restoreFileName=fileData.fileName;
+    if(targetFileName!=NULL){//指定恢复文件名
+        restoreFileName=targetFileName;
+    }
+    if(targetPath!=NULL){//指定恢复路径
+        restorePath=targetPath;
+    }
+    if(S_ISDIR(fileData.s.st_mode)){
+        if(copyDirReadRecord(record,sourcePath,sourceFileName,restorePath.c_str(),restoreFileName.c_str())){
+            cout<<"还原失败！路径："<<getSourceFile(restorePath.c_str(),restoreFileName.c_str())<<endl;
+            return -1;
+        }
+    }else{
+        if(copyOtherFile(sourcePath,sourceFileName,restorePath.c_str(),restoreFileName.c_str())){
+            cout<<"还原失败！路径："<<getSourceFile(restorePath.c_str(),restoreFileName.c_str())<<endl;
+            return -1;
+        }
+    }
+    changeStat(getSourceFile(restorePath.c_str(),restoreFileName.c_str()).c_str(),fileData.s);
+    cout<<"还原成功！路径："<<getSourceFile(restorePath.c_str(),restoreFileName.c_str())<<endl;
+    return 0;
 }

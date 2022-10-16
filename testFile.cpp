@@ -85,10 +85,10 @@ int testNormal(){
     cout<<file3<<" : "<<num3;
     cout<<file4<<" : "<<num4;
 
-    cout<<putBack(record,otherPath,file1,targetPath,num1.c_str())<<endl;
-    cout<<putBack(record,otherPath,file2,targetPath,num2.c_str())<<endl;
-    cout<<putBack(record,otherPath,file3,targetPath,num3.c_str())<<endl;
-    cout<<putBack(record,otherPath,file4,targetPath,num4.c_str())<<endl;
+    cout<<putBack(record,targetPath,num1.c_str(),otherPath,file1)<<endl;
+    cout<<putBack(record,targetPath,num2.c_str(),otherPath,file2)<<endl;
+    cout<<putBack(record,targetPath,num3.c_str(),otherPath,file3)<<endl;
+    cout<<putBack(record,targetPath,num4.c_str(),otherPath,file4)<<endl;
 }
 
 int testDir(){
@@ -99,7 +99,7 @@ int testDir(){
 
     cout<<file1<<" : "<<num1;
 
-    cout<<putBack(record,otherPath,file1,targetPath,num1.c_str())<<endl;
+    cout<<putBack(record,targetPath,num1.c_str(),otherPath,file1)<<endl;
 }
 
 int testLink(){
@@ -110,7 +110,7 @@ int testLink(){
 
     cout<<file1<<" : "<<num1;
 
-    cout<<putBack(record,otherPath,file1,targetPath,num1.c_str())<<endl;
+    cout<<putBack(record,targetPath,num1.c_str(),otherPath,file1)<<endl;
 }
 
 int testBlock(){
@@ -121,7 +121,7 @@ int testBlock(){
 
     cout<<file1<<" : "<<num1;
 
-    cout<<putBack(record,otherPath,file1,targetPath,num1.c_str())<<endl;
+    cout<<putBack(record,targetPath,num1.c_str(),otherPath,file1)<<endl;
 }
 
 int testFIFO(){
@@ -132,7 +132,7 @@ int testFIFO(){
 
     cout<<file1<<" : "<<num1;
 
-    cout<<putBack(record,otherPath,file1,targetPath,num1.c_str())<<endl;
+    cout<<putBack(record,targetPath,num1.c_str(),otherPath,file1)<<endl;
 }
 
 int testSocket(){
@@ -143,9 +143,9 @@ int testSocket(){
 
     cout<<file1<<" : "<<num1;
 
-    cout<<putBack(record,otherPath,file1,targetPath,num1.c_str())<<endl;
+    cout<<putBack(record,targetPath,num1.c_str(),otherPath,file1)<<endl;
 }
 
 int main(){
-    testNormal();
+    
 }
