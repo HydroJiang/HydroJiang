@@ -69,95 +69,100 @@ char* targetPath="/home/jgqj/target";
 char* otherPath="/home/jgqj/other";
 
 int testNormal(){
-    Record record;
+    
     char* file1="hello_world.cpp";//cpp
     char* file2="hello_world";//可执行文件
     char* file3="test.docx";//docx
     char* file4="0.png";//图片
 
-    string num1=to_string(backUp(record,sourcePath,file1,targetPath,file1));
-    string num2=to_string(backUp(record,sourcePath,file2,targetPath,file2));
-    string num3=to_string(backUp(record,sourcePath,file3,targetPath,file3));
-    string num4=to_string(backUp(record,sourcePath,file4,targetPath,file4));
+    string num1=to_string(backUp(sourcePath,file1,targetPath,file1));
+    string num2=to_string(backUp(sourcePath,file2,targetPath,file2));
+    string num3=to_string(backUp(sourcePath,file3,targetPath,file3));
+    string num4=to_string(backUp(sourcePath,file4,targetPath,file4));
 
     cout<<file1<<" : "<<num1;
     cout<<file2<<" : "<<num2;
     cout<<file3<<" : "<<num3;
     cout<<file4<<" : "<<num4;
 
-    cout<<putBack(record,targetPath,num1.c_str(),otherPath,file1)<<endl;
-    cout<<putBack(record,targetPath,num2.c_str(),otherPath,file2)<<endl;
-    cout<<putBack(record,targetPath,num3.c_str(),otherPath,file3)<<endl;
-    cout<<putBack(record,targetPath,num4.c_str(),otherPath,file4)<<endl;
+    cout<<putBack(targetPath,num1.c_str(),otherPath,file1)<<endl;
+    cout<<putBack(targetPath,num2.c_str(),otherPath,file2)<<endl;
+    cout<<putBack(targetPath,num3.c_str(),otherPath,file3)<<endl;
+    cout<<putBack(targetPath,num4.c_str(),otherPath,file4)<<endl;
 
     //用法：在这里打断点,并修改已备份文件
-    cout<<compareFile(record,targetPath,num1.c_str())<<endl;
-    cout<<compareFile(record,targetPath,num2.c_str())<<endl;
-    cout<<compareFile(record,targetPath,num3.c_str())<<endl;
-    cout<<compareFile(record,targetPath,num4.c_str())<<endl;
+    cout<<compareFile(targetPath,num1.c_str())<<endl;
+    cout<<compareFile(targetPath,num2.c_str())<<endl;
+    cout<<compareFile(targetPath,num3.c_str())<<endl;
+    cout<<compareFile(targetPath,num4.c_str())<<endl;
+
+    cout<<rmBackUp(targetPath,num2.c_str())<<endl;
+    cout<<rmBackUp(targetPath,num3.c_str())<<endl;
 }
 
 int testDir(){
-    Record record;
+    
     char* file1="floder";
 
-    string num1=to_string(backUp(record,sourcePath,file1,targetPath,file1));
+    string num1=to_string(backUp(sourcePath,file1,targetPath,file1));
 
     cout<<file1<<" : "<<num1;
 
-    cout<<putBack(record,targetPath,num1.c_str(),otherPath,file1)<<endl;
+    cout<<putBack(targetPath,num1.c_str(),otherPath,file1)<<endl;
     //用法：在这里打断点,并修改已备份文件
-    cout<<compareFile(record,targetPath,num1.c_str())<<endl;
+    cout<<compareFile(targetPath,num1.c_str())<<endl;
+
+    cout<<rmBackUp(targetPath,num1.c_str())<<endl;
 }
 
 int testLink(){
-    Record record;
+    
     char* file1="soft";
 
-    string num1=to_string(backUp(record,sourcePath,file1,targetPath,file1));
+    string num1=to_string(backUp(sourcePath,file1,targetPath,file1));
 
     cout<<file1<<" : "<<num1;
 
-    cout<<putBack(record,targetPath,num1.c_str(),otherPath,file1)<<endl;
-    cout<<compareFile(record,targetPath,num1.c_str())<<endl;
+    cout<<putBack(targetPath,num1.c_str(),otherPath,file1)<<endl;
+    cout<<compareFile(targetPath,num1.c_str())<<endl;
 }
 
 int testBlock(){
-    Record record;
+    
     char* file1="block";
 
-    string num1=to_string(backUp(record,sourcePath,file1,targetPath,file1));
+    string num1=to_string(backUp(sourcePath,file1,targetPath,file1));
 
     cout<<file1<<" : "<<num1;
 
-    cout<<putBack(record,targetPath,num1.c_str(),otherPath,file1)<<endl;
-    cout<<compareFile(record,targetPath,num1.c_str())<<endl;
+    cout<<putBack(targetPath,num1.c_str(),otherPath,file1)<<endl;
+    cout<<compareFile(targetPath,num1.c_str())<<endl;
 }
 
 int testFIFO(){
-    Record record;
+    
     char* file1="fifo";
 
-    string num1=to_string(backUp(record,sourcePath,file1,targetPath,file1));
+    string num1=to_string(backUp(sourcePath,file1,targetPath,file1));
 
     cout<<file1<<" : "<<num1;
 
-    cout<<putBack(record,targetPath,num1.c_str(),otherPath,file1)<<endl;
-    cout<<compareFile(record,targetPath,num1.c_str())<<endl;
+    cout<<putBack(targetPath,num1.c_str(),otherPath,file1)<<endl;
+    cout<<compareFile(targetPath,num1.c_str())<<endl;
 }
 
 int testSocket(){
-    Record record;
+    
     char* file1="socket";
 
-    string num1=to_string(backUp(record,sourcePath,file1,targetPath,file1));
+    string num1=to_string(backUp(sourcePath,file1,targetPath,file1));
 
     cout<<file1<<" : "<<num1;
 
-    cout<<putBack(record,targetPath,num1.c_str(),otherPath,file1)<<endl;
-    cout<<compareFile(record,targetPath,num1.c_str())<<endl;
+    cout<<putBack(targetPath,num1.c_str(),otherPath,file1)<<endl;
+    cout<<compareFile(targetPath,num1.c_str())<<endl;
 }
 
 int main(){
-    testLink();
+    testNormal();
 }
