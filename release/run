@@ -1,0 +1,12 @@
+#please move the dir with source code to '/home/usr', and run this bash
+
+sudo apt-get update
+sudo apt-get install build-essential
+sudo apt-get install qtcreator
+sudo apt-get install qt5-default
+sudo apt-get install libfontconfig1
+sudo apt-get install mesa-common-dev
+sudo apt-get upgrade
+
+qmake ../back_up_system.pro -spec linux-g++
+make -j8 

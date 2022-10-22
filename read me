@@ -1,0 +1,4 @@
+1.将本文件夹放到随便哪里
+2.改变工作路径为back_up_system文件夹下的release文件夹
+3.运行run脚本   (可能需要修改权限)
+4.release文件夹下的back_up_system即为可执行文件 (可能需要修改权限)
