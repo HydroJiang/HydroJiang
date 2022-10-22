@@ -343,10 +343,9 @@ void tearPathAndName(const string &pathAndName,string &path,string &name){
         this->file.erase(file.begin()+index);
         if(len)len--;
         else {
-            cout<<"rm record fail!"<<endl;
+            cout<<"error!"<<endl;
             return -1;
         }
-        cout<<"rm record success!"<<endl;
         return 0;
     }
 
