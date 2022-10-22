@@ -10,13 +10,12 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <pwd.h>
+#include <grp.h>
 
-#include "sockutil.h"          /* some utility functions */
+#include "global.h"          /* some utility functions */
 
 using namespace std;
-
-#define MAX_PATH 128    //工作路径名最大长度
-#define LINE_SIZE 128   //每次拷贝最大字节数
 
 /* 将字符串s，以c为分隔符，分为部分塞到向量v中 */
 void split(const string& s, vector<string>& v, const string& c)
@@ -188,19 +187,16 @@ int copyContent(const char* sourcePath,const char* sourceFileName,const char* ta
     return 0;
 }
 
-struct recordLine{
-    int newFileNum;
-    char sourcePath[MAX_PATH];
-    char fileName[MAX_PATH];
-    struct stat s;
-    struct timespec backUpTime;
-};
+/* 将绝对路径分为路径和文件名 */
+void tearPathAndName(const string &pathAndName,string &path,string &name){
+    int pos=pathAndName.find_last_of('/');
+    cout<<pos<<endl;
+    path=pathAndName.substr(0,pos);
+    name=pathAndName.substr(pos+1,pathAndName.size()-1);
+    cout<<path<<endl;
+    cout<<name<<endl;
+}
 
-class Record{
-private:
-    string recordPath;
-    vector<struct recordLine> file;
-    int len;
 
 /*
     void charToStat(struct stat& s,const string &str,const int &size){
@@ -235,7 +231,7 @@ private:
 */
 
     /* 从本地record文件中获取记录信息,构造函数用 */
-    int readRecord(){
+    int Record::readRecord(){
         ifstream inFile;
         inFile.open(recordPath,ios::in|ios::binary);
         if(!inFile.is_open()){
@@ -257,23 +253,26 @@ private:
         }
 
         cout<<"file: "<<recordPath<<" read! "<<endl;
+        inFile.close();
         return 0;
     }
     
-public:
-    Record(){
+    Record::Record(){
         char workPath[MAX_PATH];  
         getcwd(workPath, MAX_PATH);//获得当前工作路径,用于写日志
         this->recordPath=workPath;
         this->recordPath+="/record";
         readRecord();
     }
-    ~Record(){
-        writeRecord();
+
+    Record::Record(string path){
+        this->recordPath=path;
+        this->recordPath+="/record";
+        readRecord();
     }
 
     /* 写本地record文件,备份完文件用 */
-    int writeRecord(){
+    int Record::writeRecord(){
         ofstream outFile;
         outFile.open(recordPath,ios::out|ios::binary|ios::trunc);
         if(!outFile.is_open()){
@@ -287,18 +286,19 @@ public:
             outFile.write(reinterpret_cast<char *>(&temp),sizeof(recordLine));
         }
         cout<<"file: "<<recordPath<<" write! "<<endl;
+        outFile.close();
         return 0;
     }
     
     /* 全部输出 */
-    void coutRecord(){
+    void Record::coutRecord(){
         for(int i=0;i<this->file.size();i++){
             cout<<"newFileNum: "<<this->file[i].newFileNum<<endl;
             printStat(&file[i].s,getSourceFile(this->file[i].sourcePath,this->file[i].fileName));
         }
     }
     /* 通过文件名和文件路径，搜索是否在其中，返回在链表中位置index */
-    int getRecord(const char* sourcePath,const char* fileName){
+    int Record::getRecord(const char* sourcePath,const char* fileName){
         int i;
         int length=file.size();
         for(i=0;i<length;i++){
@@ -309,7 +309,7 @@ public:
     }
 
     /* 通过唯一序号，搜索是否在其中，返回在链表中位置index */
-    int getRecord(const int& newFileNum){
+    int Record::getRecord(const int& newFileNum){
         int i;
         int length=file.size();
         for(i=0;i<length;i++){
@@ -320,26 +320,26 @@ public:
     }
 
     /* file为private */
-    const struct recordLine& getLine(int index){
+    const struct recordLine& Record::getLine(int index){
         return file[index];
     }
 
     /* 备份文件后，在record中加一行，并返回唯一序号newFileNum */
-    int addRecord(const char* sourcePath,const char* fileName,struct stat s){
+    int Record::addRecord(const char* sourcePath,const char* fileName,struct stat s){
         struct recordLine temp;
         strcpy(temp.fileName,fileName);
         strcpy(temp.sourcePath,sourcePath);
         temp.s=s;
         clock_gettime(CLOCK_REALTIME, &temp.backUpTime);//备份文件时，自动获取当前系统时间
         if(file.size()) temp.newFileNum=(file.end()-1)->newFileNum+1;
-        else temp.newFileNum=0;
+        else temp.newFileNum=1;
         this->file.push_back(temp);
         len++;
         return temp.newFileNum;
     }
 
     /* 根据index删除文件，需要先调用getRecord获取index，注意先判断返回值是否为-1 */
-    int rmRecord(int index){
+    int Record::rmRecord(int index){
         this->file.erase(file.begin()+index);
         if(len)len--;
         else {
@@ -349,61 +349,202 @@ public:
         cout<<"rm record success!"<<endl;
         return 0;
     }
-};
 
-/* 测试函数 */
-void add1234(){
-    Record record;
-    char* path1="/home/jgqj/source";
-    char* path2="/home/jgqj/target";
-    char* file1="test.docx";
-    char* file2="hard";
-    char* file3="hello_world";    
-    char* file4="hello_world.cpp"; 
 
-    record.addRecord(path1,file1,getStat(path1,file1));   
-    record.addRecord(path1,file2,getStat(path1,file2));   
-    record.addRecord(path1,file3,getStat(path1,file3));   
-    record.addRecord(path1,file4,getStat(path1,file4));   
+    //CONFIG默认参数
+    void configEditor::placeHolder(){
+        string temp=workPath+"/target";
+        strcpy(CONFIG.backUpPath,temp.c_str());
+        CONFIG.compress=true;
+        CONFIG.encryption=true;
+    }
 
-    record.coutRecord();
+    /* 从本地config文件中获取记录信息,构造函数用 */
+    int configEditor::readConfig(){
+        ifstream inFile;
+        inFile.open(configFilePath,ios::in|ios::binary);
+        if(!inFile.is_open()){
+            cout<<"fail to open file: "<<configFilePath<<endl;
+            inFile.close();
+            placeHolder();//设为默认参数
+            return -1;
+        }
+        int count;
+        inFile.read((char*)(&CONFIG),sizeof(config));
+        inFile.close();
+        cout<<"config: "<<configFilePath<<" read! "<<endl;
+        return 0;
+    }
+    
+    configEditor::configEditor(){
+        char temp[MAX_PATH];  
+        getcwd(temp, MAX_PATH);//获得当前工作路径,用于写日志
+        this->workPath=temp;
+        this->configFilePath=this->workPath+"/do_not_touch!";
+        readConfig();
+    }
 
+    /* 写本地config文件,修改完设置用 */
+    int configEditor::writeConfig(){
+        ofstream outFile;
+        outFile.open(configFilePath,ios::out|ios::binary|ios::trunc);
+        if(!outFile.is_open()){
+            cout<<"fail to open file: "<<configFilePath<<endl;
+            outFile.close();
+            return -1;
+        }
+        outFile.write(reinterpret_cast<char *>(&CONFIG),sizeof(config));
+        outFile.close();
+        cout<<"config: "<<configFilePath<<" write! "<<endl;
+        return 0;
+    }
+
+    void configEditor::changeConfig(const config &temp){
+        strcpy(CONFIG.backUpPath,temp.backUpPath);
+        CONFIG.compress=temp.compress;
+        CONFIG.encryption=temp.encryption;
+    }
+    
+    /* 全部输出 */
+    void configEditor::coutConfig(){
+        cout<<"back up dir: "<<CONFIG.backUpPath<<endl;
+        if(!CONFIG.compress)
+            cout<<"Do not ";
+        cout<<"compress while back up."<<endl;
+        if(!CONFIG.encryption)
+            cout<<"Do not ";
+        cout<<"encryption while back up."<<endl;
+    }
+
+    string configEditor::retTargetPath(){
+        string temp=this->CONFIG.backUpPath;
+        return temp;
+    }
+
+    bool configEditor::retIsCompress(){
+        return this->CONFIG.compress;
+    }
+    
+    bool configEditor::retIsEncryption(){
+        return this->CONFIG.encryption;
+    }
+
+
+string modeToStr(mode_t mode){
+    string str="";
+
+/*
+        S_ISREG(st_mode)  is it a regular file?     普通文件
+        S_ISDIR(m)  directory?                      目录文件
+        S_ISCHR(m)  character device?               字符设备文件
+        S_ISBLK(m)  block device?                   块设备文件
+        S_ISFIFO(m) FIFO (named pipe)?              管道文件
+        S_ISLNK(m)  symbolic link?                  软链接文件
+        S_ISSOCK(m) socket?                         socket文件
+*/
+    //类型
+    if(S_ISDIR(mode)){
+        str+="d";
+    }else if(S_ISCHR(mode)){
+        str+="c";
+    }else if(S_ISBLK(mode)){
+        str+="b";
+    }else if(S_ISFIFO(mode)){
+        str+="p";
+    }else if(S_ISLNK(mode)){
+        str+="l";
+    }else{
+        str+="_";
+    }
+/*
+        S_IRWXU     00700   owner has read, write, and execute permission
+        S_IRUSR     00400   owner has read permission
+        S_IWUSR     00200   owner has write permission
+        S_IXUSR     00100   owner has execute permission
+        S_IRWXG     00070   group has read, write, and execute permission
+        S_IRGRP     00040   group has read permission
+        S_IWGRP     00020   group has write permission
+        S_IXGRP     00010   group has execute permission
+        S_IRWXO     00007   others (not in group) have read,  write,  and execute permission
+        S_IROTH     00004   others have read permission
+        S_IWOTH     00002   others have write permission
+        S_IXOTH     00001   others have execute permission
+*/
+    //usr
+    //&优先级低于==，需要加括号
+    if((mode&S_IRUSR)==S_IRUSR){
+        str+="r";
+    }else{
+        str+="_";
+    }
+    if((mode&S_IWUSR)==S_IWUSR){
+        str+="w";
+    }else{
+        str+="_";
+    }
+    if((mode&S_IXUSR)==S_IXUSR){
+        str+="x";
+    }else{
+        str+="_";
+    }
+
+    //group
+    if((mode&S_IRGRP)==S_IRGRP){
+        str+="r";
+    }else{
+        str+="_";
+    }
+    if((mode&S_IWGRP)==S_IWGRP){
+        str+="w";
+    }else{
+        str+="_";
+    }
+    if((mode&S_IXGRP)==S_IXGRP){
+        str+="x";
+    }else{
+        str+="_";
+    }
+
+    //other
+    if((mode&S_IROTH)==S_IROTH){
+        str+="r";
+    }else{
+        str+="_";
+    }
+    if((mode&S_IWOTH)==S_IWOTH){
+        str+="w";
+    }else{
+        str+="_";
+    }
+    if((mode&S_IXOTH)==S_IXOTH){
+        str+="x";
+    }else{
+        str+="_";
+    }
+    return str;
 }
-/* 测试函数 */
-int rm3(){
-    Record record;
-    char* path1="/home/jgqj/source";
-    char* path2="/home/jgqj/target";
-    char* file1="test.docx";
-    char* file2="hard";
-    char* file3="hello_world";    
-    char* file4="hello_world.cpp"; 
 
-    record.coutRecord();
-    record.rmRecord(record.getRecord(path1,file3));
-    record.coutRecord();
-}
-/* 测试函数 */
-int add4(){
-    Record record;
-    char* path1="/home/jgqj/source";
-    char* path2="/home/jgqj/target";
-    char* file1="test.docx";
-    char* file2="hard";
-    char* file3="hello_world";    
-    char* file4="hello_world.cpp"; 
-
-    record.coutRecord(); 
-    record.addRecord(path1,file4,getStat(path1,file4));   
-    record.coutRecord(); 
+// timespec to present time
+string timeSpecToStr(timespec t){
+    time_t now=t.tv_sec;
+	return ctime(&now);
 }
 
-// int main(){
-//     remove("record");
-//     cout<<"add1234"<<endl<<endl;
-//     add1234();
-//     cout<<"rm3"<<endl<<endl;
-//     rm3();
-//     cout<<"add4"<<endl<<endl;
-//     add4();
-// }
+//owner:group
+string ownerGroup(struct stat info){
+    struct passwd *pw = getpwuid(info.st_uid);
+    struct group  *gr = getgrgid(info.st_gid);
+
+    string temp=pw->pw_name;
+    temp+=":";
+    temp+=+gr->gr_name;
+    return temp;
+}
+
+/* 若为目录或普通文件返回1 */
+bool isRegOrDir(const char* path,const char* name){
+    struct stat s=getStat(path,name);
+    mode_t m=s.st_mode;
+
+    return (S_ISDIR(m)|S_ISREG(m));
+}

@@ -8,7 +8,9 @@
 #include <dirent.h>
 #include <unistd.h>
 
-#include "back-up.cpp"
+#include "global.h"
+#include "../fxs/FXSGlobal.h"
+
 
 using namespace std;
 
@@ -163,6 +165,60 @@ int testSocket(){
     cout<<compareFile(targetPath,num1.c_str())<<endl;
 }
 
-int main(){
-    testNormal();
+int testCompressEncryption(){
+   char* sourcePath="/home/jgqj/source";
+   char* targetPath="/home/jgqj/target";
+   char* otherPath="/home/jgqj/other";
+
+   char* file1="hello_world.cpp";//cpp
+   char* file2="floder";//可执行文件
+   char* file3="1.txt";//docx
+   char* file4="0.png";//图片
+   string code="201214";
+
+   encryption(sourcePath, file4, targetPath, file4,code);
+   deEncryption(targetPath, file4, otherPath, file4,code);
+   encryption(sourcePath, file2, targetPath, file2,code);
+   deEncryption(targetPath, file2, otherPath, file2,code);
+
+   compress(sourcePath, file4, targetPath, file4);
+   deCompress(targetPath, file4, otherPath, file4);
+   compress(sourcePath, file2, targetPath, file2);
+   deCompress(targetPath, file2, otherPath, file2);
+
 }
+
+//int main(){
+//   configEditor c;
+//   c.coutConfig();
+//   struct config temp;
+//   strcpy(temp.backUpPath,"placeholder");
+//   temp.compress=true;
+//   temp.encryption=true;
+//   // c.changeConfig(temp);
+//   c.coutConfig();
+//}
+
+//int main(){
+//    struct stat s=getStat("/home/jgqj/source","block");
+//    cout<<modeToStr(s.st_mode)<<endl;
+//    cout<<timeSpecToStr(s.st_mtim)<<endl;
+//    cout<<ownerGroup(s)<<endl;
+//}
+
+//int main(){
+//    char* sourcePath="/home/jgqj/source";
+//    char* targetPath="/home/jgqj/target";
+//    char* otherPath="/home/jgqj/other";
+
+//    char* file1="hello_world.cpp";//cpp
+//    char* file2="hello_world";//可执行文件
+//    char* file3="test.docx";//docx
+//    char* file4="0.png";//图片
+//    string code="123456";
+
+//    int a=compress(sourcePath, file1, targetPath, file1);
+
+//}
+
+

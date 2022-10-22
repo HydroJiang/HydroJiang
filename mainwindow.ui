@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>600</width>
+    <height>400</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>600</width>
+    <height>400</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>600</width>
+    <height>400</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>Back-up System</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QPushButton" name="backUpFileButton">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>0</y>
+      <width>200</width>
+      <height>100</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>BACK_UP_FILE</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="configButton">
+    <property name="geometry">
+     <rect>
+      <x>400</x>
+      <y>0</y>
+      <width>200</width>
+      <height>100</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>CONFIG</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="backUpDirButton">
+    <property name="geometry">
+     <rect>
+      <x>200</x>
+      <y>0</y>
+      <width>200</width>
+      <height>100</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>BACK_UP_DIR</string>
+    </property>
+   </widget>
+   <widget class="QTableWidget" name="dirMenu">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>100</y>
+      <width>600</width>
+      <height>300</height>
+     </rect>
+    </property>
+   </widget>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

@@ -14,7 +14,7 @@
 #include <fcntl.h>
 #include <string.h>
 
-#define UNIX_PATH_MAX 108
+#include "global.h"
 
 struct sockaddr_un
 {

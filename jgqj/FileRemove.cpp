@@ -8,12 +8,9 @@
 #include <dirent.h>
 #include <unistd.h>
 
-#include "FileCompare.h"
+#include "global.h"
 
 using namespace std;
-
-#define MAX_PATH 100    //工作路径名最大长度
-#define LINE_SIZE 128   //每次拷贝最大字节数
 
 int rm(const char* path,const char* fileName);
 int rmWriteRecord(Record &record,const char* path,const char* fileName);
@@ -82,6 +79,7 @@ int deleteDir(const char* path,const char* fileName){
 
 /* 通用rm -r，自动判断文件类型 */
 int rm(const char* path,const char* fileName){
+    if(access(getSourceFile(path,fileName).c_str(),F_OK)) return -1;
     struct stat buf=getStat(path,fileName);
     if(!S_ISDIR(buf.st_mode)){
         return deleteFile(path,fileName);
@@ -161,3 +159,4 @@ int rmWriteRecord(Record &record,const char* path,const char* fileName){
     return record.rmRecord(index);
 
 }
+

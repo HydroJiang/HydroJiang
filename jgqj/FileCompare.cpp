@@ -8,7 +8,7 @@
 #include <dirent.h>
 #include <unistd.h>
 
-#include "Util.h"
+#include "global.h"
 
 using namespace std;
 
@@ -274,3 +274,4 @@ int cmpReadRecord(Record &record,const char* sourcePath,const char* sourceFileNa
     }
     return 0;
 }
+

@@ -2,7 +2,7 @@ QT       += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-CONFIG += c++11
+CONFIG += c++17
 
 # The following define makes your compiler emit warnings if you use
 # any Qt feature that has been marked deprecated (the exact warnings
@@ -16,17 +16,36 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    jgqj/FileCompare.cpp \
+    jgqj/FileCopy.cpp \
+    jgqj/FileRemove.cpp \
+    jgqj/Util.cpp \
+    fxs/AESutil.cpp \
+    fxs/FXSutil.cpp \
+    fxs/Haffman.cpp \
+    fxs/Haffutil.cpp \
+    fxs/fileIO.cpp \
+    jgqj/function.cpp \
+    configPage.cpp \
     main.cpp \
     mainwindow.cpp
 
 HEADERS += \
-    mainwindow.h
+    configPage.h \
+    fxs/AESutil.h \
+    fxs/Haffman.h \
+    fxs/Haffutil.h \
+    fxs/fileIO.h \
+    mainwindow.h \
+    jgqj/global.h \
+    fxs/FXSGlobal.h
 
 FORMS += \
+    configPage.ui \
     mainwindow.ui
 
 TRANSLATIONS += \
-    back-up_system_zh_CN.ts
+    back_up_system_zh_CN.ts
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

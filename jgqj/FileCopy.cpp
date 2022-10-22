@@ -8,7 +8,7 @@
 #include <dirent.h>
 #include <unistd.h>
 
-#include "FileRemove.h"
+#include "global.h"
 
 using namespace std;
 
@@ -101,13 +101,14 @@ int copyLink(const char* sourcePath,const char* sourceFileName,const char* targe
     struct stat fileData=getStat(sourcePath,sourceFileName);
     int size = fileData.st_size;
     cout<<"file size: "<<size<<endl;
-    char* linkPath=(char*)malloc(sizeof(char)*size);
+    char* linkPath=(char*)calloc(sizeof(char),size);//用malloc会出错，因为尾部没初始化为0，肯定有问题
     struct stat tmp;
     
     if(!S_ISLNK(fileData.st_mode)){
         cout<<"this not a soft link!"<<endl;
         return -1;
     }
+    
     if(!lstat(getSourceFile(targetPath,targetFileName).c_str(),&tmp)){//文件存在，结果为0。access判断不了软链接是否存在
         cout<<targetFile<<" exist!"<<endl;
         rm(targetPath,targetFileName);//若存在则先删除，否则无法复制软链接文件
@@ -117,11 +118,13 @@ int copyLink(const char* sourcePath,const char* sourceFileName,const char* targe
     if(symlink(linkPath,targetFile.c_str())==0){
         //无需复制内容，软链接内容即为路径
         cout<<targetFile<<" copy success!"<<endl;
+        free(linkPath);
         // changeStat(targetFile.c_str(),fileData);
         return 0;
     }
     else{
         cout<<targetFile<<" created fail!"<<endl;
+        free(linkPath);
         return -1;
     }
 }
@@ -320,6 +323,7 @@ int cpWriteRecord(Record &record,const char* sourcePath,const char* sourceFileNa
     struct stat fileData=getStat(sourcePath,sourceFileName);
     int newFileNum=record.addRecord(sourcePath,sourceFileName,fileData);//先加记录获取唯一序列号
     string strNewFileNum=to_string(newFileNum);
+    rm(targetPath,strNewFileNum.c_str());
     if(S_ISDIR(fileData.st_mode)){
         if(copyDirWriteRecord(record,sourcePath,sourceFileName,targetPath,strNewFileNum.c_str())){
             record.rmRecord(newFileNum);//复制失败，删除record新增行
@@ -411,7 +415,8 @@ int cpReadRecord(Record &record,const char* sourcePath,const char* sourceFileNam
     if(targetPath!=NULL){//指定恢复路径
         restorePath=targetPath;
     }
-    if(S_ISDIR(fileData.s.st_mode)){
+    rm(restorePath.c_str(),restoreFileName.c_str());
+     if(S_ISDIR(fileData.s.st_mode)){
         if(copyDirReadRecord(record,sourcePath,sourceFileName,restorePath.c_str(),restoreFileName.c_str())){
             cout<<"还原失败！路径："<<getSourceFile(restorePath.c_str(),restoreFileName.c_str())<<endl;
             return -1;
@@ -426,3 +431,4 @@ int cpReadRecord(Record &record,const char* sourcePath,const char* sourceFileNam
     cout<<"还原成功！路径："<<getSourceFile(restorePath.c_str(),restoreFileName.c_str())<<endl;
     return 0;
 }
+
