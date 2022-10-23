@@ -6,7 +6,6 @@
 sudo apt-get update
 sudo apt-get install g++
 sudo apt-get install build-essential
-# sudo apt-get install qtcreator
 sudo apt-get install qt5-default
 sudo apt-get install libfontconfig1
 sudo apt-get install mesa-common-dev
@@ -17,3 +16,4 @@ qmake ../back_up_system.pro -spec linux-g++
 make -j8 
 
 #然后当前文件夹下back_up_system即为可执行文件
+#若无法运行，运行：objdump -x back_up_system | grep NEEDED，查看依赖库
