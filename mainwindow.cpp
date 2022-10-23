@@ -98,6 +98,7 @@ void MainWindow::slotActionCompare(){
     string targetPath=config.retTargetPath();
 
     string code=this->getPasswd();
+    if(code=="")return;
 
     if(-1!=compareFile(targetPath.c_str(),targetFileName.c_str(),code)){
         msg+=" is same to source File!";
@@ -143,6 +144,7 @@ void MainWindow::slotActionRestoreTarget(){
     string msg=getSourceFile(targetPath.c_str(),t->text().toStdString().c_str());
 
     string code=this->getPasswd();
+    if(code=="")return;
 
     configEditor config;//open config to get target dir
     string sourcePath=config.retTargetPath();
@@ -168,6 +170,7 @@ void MainWindow::slotActionRestoreNull(){
     string msg=getSourceFile(targetPath.c_str(),t->text().toStdString().c_str());
 
     string code=this->getPasswd();
+    if(code=="")return;
 
     configEditor config;//open config to get target dir
     string sourcePath=config.retTargetPath();
@@ -258,6 +261,7 @@ void MainWindow::backUpInQt(string pathAndName){
     tearPathAndName(pathAndName,sourcePath,sourceFileName);
 
     string code=this->getPasswd();
+    if(code=="")return;
 
     int fileNo=backUp(sourcePath.c_str(),sourceFileName.c_str(),targetPath.c_str(),sourceFileName.c_str(),code);
     if(-1!=fileNo){
@@ -273,9 +277,7 @@ void MainWindow::backUpInQt(string pathAndName){
 string MainWindow::getPasswd(){
     bool ok=false;
     QString passWord;
-    while((!ok) || passWord.isEmpty()){
-        passWord = QInputDialog::getText(this, "input code","input your code", QLineEdit::Password,0, &ok);
-    }
+    passWord = QInputDialog::getText(this, "input code","input your code", QLineEdit::Password,0, &ok);
     string code=passWord.toStdString();
     cout<<code<<endl;
     return code;

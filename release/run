@@ -1,12 +1,19 @@
-#please move the dir with source code to '/home/usr', and run this bash
+# 请置工作目录为当前脚本所在目录，然后运行该脚本
+# 使用ubuntu下载的时候出现问题，不能访问cn.archive.ubuntu.com导致无法完成下载, 则请执行下列操作保证能apt-get：
+# sudo vim /etc/apt/sources.list, 修改http://cn.archive.ubuntu.com为镜像网址，如http://mirrors.aliyun.com/ubuntu/
 
+#依赖库
 sudo apt-get update
+sudo apt-get install g++
 sudo apt-get install build-essential
-sudo apt-get install qtcreator
+# sudo apt-get install qtcreator
 sudo apt-get install qt5-default
 sudo apt-get install libfontconfig1
 sudo apt-get install mesa-common-dev
 sudo apt-get upgrade
 
+#编译
 qmake ../back_up_system.pro -spec linux-g++
 make -j8 
+
+#然后当前文件夹下back_up_system即为可执行文件
