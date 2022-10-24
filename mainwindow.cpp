@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+/* 初始化主窗口 */
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -43,6 +44,7 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+/* 点击备份文件按钮，备份文件到备份目录并将文件信息写入record */
 void MainWindow::on_backUpFileButton_clicked()
 {
     string pathAndName=QFileDialog::getOpenFileName(this,"choose file","/home").toStdString();
@@ -50,6 +52,7 @@ void MainWindow::on_backUpFileButton_clicked()
     backUpInQt(pathAndName);
 }
 
+/* 点击备份目录按钮，备份目录和下面的文件到备份目录并将所有信息写入record */
 void MainWindow::on_backUpDirButton_clicked()
 {
     string pathAndName=QFileDialog::getExistingDirectory(this,"choose file","/home").toStdString();
@@ -57,6 +60,7 @@ void MainWindow::on_backUpDirButton_clicked()
     backUpInQt(pathAndName);
 }
 
+/* 点击设置按钮，跳转到设置页面 */
 void MainWindow::on_configButton_clicked()
 {
     connect(&newPage,SIGNAL(freshMain()),this,SLOT(getFreshMain()));
@@ -65,6 +69,7 @@ void MainWindow::on_configButton_clicked()
     newPage.show();
 }
 
+/* 表单单击右键，弹出菜单 */
 void MainWindow::on_dirMenu_customContextMenuRequested(const QPoint &pos)
 {
     //右键菜单
@@ -86,7 +91,7 @@ void MainWindow::on_dirMenu_customContextMenuRequested(const QPoint &pos)
     table_widget_menu->exec(QCursor::pos());
 }
 
-
+/* 点击比较，比较文件和源文件 */
 void MainWindow::slotActionCompare(){
     QTableWidgetItem* t=ui->dirMenu->item(ui->dirMenu->currentIndex().row(),0);
     string targetFileName=t->text().toStdString();
@@ -110,6 +115,7 @@ void MainWindow::slotActionCompare(){
 
 }
 
+/* 点击删除，在record中删除文件记录后，在备份目录中删除文件 */
 void MainWindow::slotActionRemove(){
     QTableWidgetItem* t=ui->dirMenu->item(ui->dirMenu->currentIndex().row(),0);
     string targetFileName=t->text().toStdString();
@@ -132,6 +138,7 @@ void MainWindow::slotActionRemove(){
     freshTalbleWidget();
 }
 
+/* 点击恢复到选择路径按钮，将文件恢复到目标目录下 */
 void MainWindow::slotActionRestoreTarget(){
     string targetPath=QFileDialog::getExistingDirectory(this,"choose dir","/home").toStdString();
 
@@ -159,6 +166,7 @@ void MainWindow::slotActionRestoreTarget(){
 
 }
 
+/* 点击恢复到选择路径按钮，将文件恢复到原目录下 */
 void MainWindow::slotActionRestoreNull(){
     QTableWidgetItem* t=ui->dirMenu->item(ui->dirMenu->currentIndex().row(),0);
     string sourceFileName=t->text().toStdString();
@@ -185,10 +193,12 @@ void MainWindow::slotActionRestoreNull(){
 
 }
 
+/* 槽函数，接受刷新信号，刷新主页面 */
 void MainWindow::getFreshMain(){
     freshTalbleWidget();
 }
 
+/* 刷新主界面 */
 void MainWindow::freshTalbleWidget(){
     //if dirMenu is on, close it
     if(ui->dirMenu->isActiveWindow())ui->dirMenu->close();
@@ -250,6 +260,7 @@ void MainWindow::freshTalbleWidget(){
     closedir(dir);
 }
 
+/* 备份文件和备份目录重用代码 */
 void MainWindow::backUpInQt(string pathAndName){
     if(pathAndName=="") return;//cancel back-up, return.
     configEditor config;//open config to get target dir
@@ -274,6 +285,7 @@ void MainWindow::backUpInQt(string pathAndName){
     freshTalbleWidget();
 }
 
+/* 弹出输入框输入密码 */
 string MainWindow::getPasswd(){
     bool ok=false;
     QString passWord;

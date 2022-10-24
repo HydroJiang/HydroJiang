@@ -14,7 +14,7 @@
 
 using namespace std;
 
-/* sourcePath为源文件所属路径，targetPath为备份文件路径 */
+/* 输入源路径和目标路径，将源路径指向的文件备份到目标路径，并在config指向的record中记录文件信息。成功返回备份文件文件名，失败返回-1 */
 int backUp(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName,const string &code){
     configEditor config;
     Record record(config.retTargetPath());//每次完成一次备份写一次文件
@@ -32,8 +32,6 @@ int backUp(const char* sourcePath,const char* sourceFileName,const char* targetP
     string fileIdStr=to_string(fileId);
     string tempName="jgqjtemp";//临时文件名
     string tempPath=targetPath;//临时路径
-
-    // cp(targetPath, fileIdStr.c_str(), targetPath, tempName.c_str());
 
     if(encryption(targetPath, fileIdStr.c_str(), targetPath, tempName.c_str(),code)){//先加密为目标路径下的tempName文件
         cout<<fileId<<" back-up: encryption fail!"<<endl;
@@ -60,7 +58,8 @@ int backUp(const char* sourcePath,const char* sourceFileName,const char* targetP
     return fileId;//其他文件不加密和压缩
 }
 
-/* sourcePath为备份文件路径     targetPath为恢复路径，可以为空，为空的时候默认源路径 */
+/* 输入源路径和目标路径，将源路径指向的文件还原到目标路径。成功返回0，失败返回-1 */
+/* 目标路径可以为空，默认为config指向的record中记录的源路径 */
 int putBack(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName,const string &code){
     configEditor config;
     Record record(config.retTargetPath());//每次完成一次备份写一次文件
@@ -104,7 +103,8 @@ int putBack(const char* sourcePath,const char* sourceFileName,const char* target
     return cpReadRecord(record,sourcePath,sourceFileName,targetPath,targetFileName);
 }
 
-/* sourcePath为备份文件路径     自动获取targetpath */
+/* 输入源路径，将源路径指向的文件和目标路径的文件进行比较。相同返回0，不同返回-1 */
+/* 目标路径为config指向的record中记录的源路径 */
 int compareFile(const char* sourcePath,const char* sourceFileName,const string &code){
     configEditor config;
     Record record(config.retTargetPath());
@@ -124,8 +124,6 @@ int compareFile(const char* sourcePath,const char* sourceFileName,const string &
     }else{
         cout<<sourceFileName<<" compare: decompress success!"<<endl;
     }
-
-    // cp(tempPath.c_str(), tempName.c_str(), tempPath.c_str(), sourceFileName);
 
     if(deEncryption(tempPath.c_str(), tempName.c_str(), tempPath.c_str(), sourceFileName,code)){//再解密为临时路径下的sourceFileName
         cout<<sourceFileName<<" compare: deencryption fail!"<<endl;
@@ -151,6 +149,7 @@ int compareFile(const char* sourcePath,const char* sourceFileName,const string &
     return cmpReadRecord(record,sourcePath,sourceFileName);
 }
 
+/* 输入源路径，删除源路径指向的文件，同时删除config指向的record中的相应文件信息。成功返回0，失败返回-1 */
 int rmBackUp(const char* sourcePath,const char* sourceFileName){
     configEditor config;
     Record record(config.retTargetPath());//每次完成一次备份写一次文件

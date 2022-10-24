@@ -12,9 +12,7 @@
 
 using namespace std;
 
-int cmp(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName);
-int cmpReadRecord(Record &record,const char* sourcePath,const char* sourceFileName);
-
+/* 输入源路径和目标路径，比较2个路径指向文件的内容，一样返回0，不一样返回-1，不能比较目录 */
 int cmpNormailFile(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName){
     string sourceFile=getSourceFile(sourcePath,sourceFileName);
     string targetFile=getSourceFile(targetPath,targetFileName);
@@ -88,6 +86,7 @@ int cmpNormailFile(const char* sourcePath,const char* sourceFileName,const char*
     
 }
 
+/* 输入源路径和目标路径，比较2个路径指向目录及下面所有文件的内容，一样返回0，不一样返回-1，只能比较目录，其他会报错 */
 int cmpDir(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName){
     string sourceFile=getSourceFile(sourcePath,sourceFileName);
     string targetFile=getSourceFile(targetPath,targetFileName);
@@ -165,6 +164,7 @@ int cmpDir(const char* sourcePath,const char* sourceFileName,const char* targetP
     return 0;
 }
 
+/* 输入源路径和目标路径，比较2个路径指向文件或目录的内容，一样返回0，不一样返回-1 */
 int cmp(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName){
     string sourceFile=getSourceFile(sourcePath,sourceFileName);
     string targetFile=getSourceFile(targetPath,targetFileName);
@@ -187,6 +187,7 @@ int cmp(const char* sourcePath,const char* sourceFileName,const char* targetPath
 
 }
 
+/* 调用record获取源路径，输入文件路径，比较2个路径指向文件的内容，一样返回0，不一样返回-1，只能比较目录，其他会报错 */
 int cmpDirReadRecord(Record &record,const char* sourcePath,const char* sourceFileName){
     int newFileNum=atoi(sourceFileName);//备份文件名为唯一序列号
     int index=record.getRecord(newFileNum);
@@ -243,6 +244,7 @@ int cmpDirReadRecord(Record &record,const char* sourcePath,const char* sourceFil
     return 0;
 }
 
+/* 调用record获取源路径，输入文件路径，比较2个路径指向文件的内容，一样返回0，不一样返回-1 */
 int cmpReadRecord(Record &record,const char* sourcePath,const char* sourceFileName){
     int newFileNum=atoi(sourceFileName);//备份文件名为唯一序列号
     int index=record.getRecord(newFileNum);

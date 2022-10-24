@@ -35,24 +35,7 @@ void split(const string& s, vector<string>& v, const string& c)
 		v.emplace_back(s.substr(pos1));
 }
 
-/*
-int access(const char* pathname, int mode);
- 
-参数介绍：
- 
-    pathname 是文件的路径名+文件名
- 
-    mode：指定access的作用，取值如下
- 
-F_OK 值为0，判断文件是否存在
- 
-X_OK 值为1，判断对文件是可执行权限
- 
-W_OK 值为2，判断对文件是否有写权限
- 
-R_OK 值为4，判断对文件是否有读权限
-*/
-/* 检查路径上的每一个文件夹是否存在，不存在则创建文件夹，用于还原备份，还原备份之前先创建路径 */
+/* 输入路径，检查路径上的每一个文件夹是否存在，不存在则创建文件夹 */
 void createDirList(const char* sourcePath){
     vector<string> dir;
     split(sourcePath,dir,"/");
@@ -68,6 +51,7 @@ void createDirList(const char* sourcePath){
     }
 }
 
+/* 输入目标路径和stat，将目标路径的stat改为s */
 void changeStat(const char* targetFile, const struct stat &s){
     int flag;
     flag=chmod(targetFile,s.st_mode);//同步权限
@@ -81,7 +65,8 @@ void changeStat(const char* targetFile, const struct stat &s){
 
 }
 
-int mksock (const char *__path, __mode_t __mode){
+/* 输入路径和权限，新建套接字文件 */
+int mksock (const char *__path, const __mode_t &__mode){
     struct sockaddr_un namesock;
     int fd;
     namesock.sun_family = AF_UNIX;
@@ -96,12 +81,13 @@ int mksock (const char *__path, __mode_t __mode){
     return 0;
 }
 
+/* 拼接path和filename，返回拼接后的string */
 string getSourceFile(const char* path,const char* fileName){
     string a=path;
     string b=fileName;
     return a+'/'+b;
 }
-/* 更新元数据，并返回struct stat */
+/* 输入路径，返回struct stat */
 struct stat getStat(const char* path,const char* fileName){
     struct stat fileData;
     //这里使用lstat，若目标文件为软链接，则获取软连接文件stat，而非它指向的文件的stat
@@ -135,7 +121,7 @@ void printStat(const struct stat *buf,const string &file){
     if(S_ISSOCK(buf->st_mode)) cout<<"this is a socket."<<endl;
 }
 
-/* 输出文件stat信息 */
+/* 输入文件路径，输出文件stat信息 */
 void coutStat(const char* path,const char* fileName){
     struct stat *buf=new struct stat;
     string name=getSourceFile(path,fileName);
@@ -146,14 +132,15 @@ void coutStat(const char* path,const char* fileName){
     printStat(buf,name);
     delete(buf);
 }
-/* 比对2个stat是否相同，仅比对内容 */
+
+/* 比对2个stat是否相同，仅比对部分字段 */
 int cmpStat(const struct stat &a,const struct stat &b){
     if(a.st_size!=b.st_size) return -1;
     if((a.st_mode&S_IFMT)!=(b.st_mode&S_IFMT)) return -1;
     return 0;
 }
 
-/* 复制两个文件内容，不管文件格式
+/* 输入源路径和目标路径，复制源路径文件内容到目标路径，不管文件格式
 不可用于软链接复制，否则会覆盖链接指向文件的内容;
 不需要复制管道，因为它存不了东西; */
 int copyContent(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName){
@@ -187,7 +174,7 @@ int copyContent(const char* sourcePath,const char* sourceFileName,const char* ta
     return 0;
 }
 
-/* 将绝对路径分为路径和文件名 */
+/* 输入绝对路径，将绝对路径分为路径和文件名 */
 void tearPathAndName(const string &pathAndName,string &path,string &name){
     int pos=pathAndName.find_last_of('/');
     cout<<pos<<endl;
@@ -197,240 +184,215 @@ void tearPathAndName(const string &pathAndName,string &path,string &name){
     cout<<name<<endl;
 }
 
-
-/*
-    void charToStat(struct stat& s,const string &str,const int &size){
-        int start=0;
-        s.st_dev=(dev_t)str.substr(start,sizeof(dev_t)).c_str();
-        start+=sizeof(dev_t);
-        s.st_ino=(ino_t)str.substr(start,sizeof(ino_t)).c_str();
-        start+=sizeof(ino_t);
-        s.st_mode=(mode_t)str.substr(start,sizeof(mode_t)).c_str();
-        start+=sizeof(mode_t);
-        s.st_nlink=(nlink_t)str.substr(start,sizeof(nlink_t)).c_str();
-        start+=sizeof(nlink_t);
-        s.st_uid=(uid_t)str.substr(start,sizeof(uid_t)).c_str();
-        start+=sizeof(uid_t);
-        s.st_gid=(gid_t)str.substr(start,sizeof(gid_t)).c_str();
-        start+=sizeof(gid_t);
-        s.st_rdev=(dev_t)str.substr(start,sizeof(dev_t)).c_str();
-        start+=sizeof(dev_t);
-        s.st_size=(off_t)str.substr(start,sizeof(off_t)).c_str();
-        start+=sizeof(off_t);
-        s.st_blksize=(blksize_t)str.substr(start,sizeof(blksize_t)).c_str();
-        start+=sizeof(blksize_t);
-        s.st_blocks=(blkcnt_t)str.substr(start,sizeof(blkcnt_t)).c_str();
-        start+=sizeof(blkcnt_t);
-        s.st_atim=(struct timespec)str.substr(start,sizeof(struct timespec)).c_str();
-        start+=sizeof(struct timespec);
-        s.st_mtim=(struct timespec)str.substr(start,sizeof(struct timespec)).c_str();
-        start+=sizeof(struct timespec);
-        s.st_ctim=(struct timespec)str.substr(start,sizeof(struct timespec)).c_str();
-        start+=sizeof(struct timespec);
-    }
-*/
-
-    /* 从本地record文件中获取记录信息,构造函数用 */
-    int Record::readRecord(){
-        ifstream inFile;
-        inFile.open(recordPath,ios::in|ios::binary);
-        if(!inFile.is_open()){
-            cout<<"fail to open file: "<<recordPath<<endl;
-            inFile.close();
-            return -1;
-        }
-        this->len=0;
-        struct recordLine temp;
-        int count;
-        while(!inFile.eof()){
-            inFile.read(reinterpret_cast<char *>(&temp),sizeof(recordLine));
-            this->file.push_back(temp);
-            this->len++;
-        }
-        if(file.size()){
-            this->len--;
-            this->file.erase(file.end()-1);
-        }
-
-        cout<<"file: "<<recordPath<<" read! "<<endl;
+/* 从本地record文件中获取记录信息，存到对象中 */
+int Record::readRecord(){
+    ifstream inFile;
+    inFile.open(recordPath,ios::in|ios::binary);
+    if(!inFile.is_open()){
+        cout<<"fail to open file: "<<recordPath<<endl;
         inFile.close();
-        return 0;
+        return -1;
     }
-    
-    Record::Record(){
-        char workPath[MAX_PATH];  
-        getcwd(workPath, MAX_PATH);//获得当前工作路径,用于写日志
-        this->recordPath=workPath;
-        this->recordPath+="/record";
-        readRecord();
-    }
-
-    Record::Record(string path){
-        this->recordPath=path;
-        this->recordPath+="/record";
-        readRecord();
-    }
-
-    /* 写本地record文件,备份完文件用 */
-    int Record::writeRecord(){
-        ofstream outFile;
-        outFile.open(recordPath,ios::out|ios::binary|ios::trunc);
-        if(!outFile.is_open()){
-            cout<<"fail to open file: "<<recordPath<<endl;
-            outFile.close();
-            return -1;
-        }
-        struct recordLine temp;
-        for(int i=0;i<this->file.size();i++){
-            temp=this->file[i];
-            outFile.write(reinterpret_cast<char *>(&temp),sizeof(recordLine));
-        }
-        cout<<"file: "<<recordPath<<" write! "<<endl;
-        outFile.close();
-        return 0;
-    }
-    
-    /* 全部输出 */
-    void Record::coutRecord(){
-        for(int i=0;i<this->file.size();i++){
-            cout<<"newFileNum: "<<this->file[i].newFileNum<<endl;
-            printStat(&file[i].s,getSourceFile(this->file[i].sourcePath,this->file[i].fileName));
-        }
-    }
-    /* 通过文件名和文件路径，搜索是否在其中，返回在链表中位置index */
-    int Record::getRecord(const char* sourcePath,const char* fileName){
-        int i;
-        int length=file.size();
-        for(i=0;i<length;i++){
-            if(!strcmp(file[i].sourcePath,sourcePath)&&!strcmp(file[i].fileName,fileName))
-                return i;
-        }
-        if(i==length) return -1;
-    }
-
-    /* 通过唯一序号，搜索是否在其中，返回在链表中位置index */
-    int Record::getRecord(const int& newFileNum){
-        int i;
-        int length=file.size();
-        for(i=0;i<length;i++){
-            if(newFileNum==file[i].newFileNum)
-                return i;
-        }
-        if(i==length) return -1;
-    }
-
-    /* file为private */
-    const struct recordLine& Record::getLine(int index){
-        return file[index];
-    }
-
-    /* 备份文件后，在record中加一行，并返回唯一序号newFileNum */
-    int Record::addRecord(const char* sourcePath,const char* fileName,struct stat s){
-        struct recordLine temp;
-        strcpy(temp.fileName,fileName);
-        strcpy(temp.sourcePath,sourcePath);
-        temp.s=s;
-        clock_gettime(CLOCK_REALTIME, &temp.backUpTime);//备份文件时，自动获取当前系统时间
-        if(file.size()) temp.newFileNum=(file.end()-1)->newFileNum+1;
-        else temp.newFileNum=1;
+    this->len=0;
+    struct recordLine temp;
+    int count;
+    while(!inFile.eof()){
+        inFile.read(reinterpret_cast<char *>(&temp),sizeof(recordLine));
         this->file.push_back(temp);
-        len++;
-        return temp.newFileNum;
+        this->len++;
     }
+    if(file.size()){
+        this->len--;
+        this->file.erase(file.end()-1);
+       }
 
-    /* 根据index删除文件，需要先调用getRecord获取index，注意先判断返回值是否为-1 */
-    int Record::rmRecord(int index){
-        this->file.erase(file.begin()+index);
-        if(len)len--;
-        else {
-            cout<<"rm record fail!"<<endl;
-            return -1;
-        }
-        cout<<"rm record success!"<<endl;
-        return 0;
-    }
+    cout<<"file: "<<recordPath<<" read! "<<endl;
+    inFile.close();
+    return 0;
+}
 
+/* 构造函数，获取当前工作路径并读取当前目录下record中信息 */
+Record::Record(){
+    char workPath[MAX_PATH];  
+    getcwd(workPath, MAX_PATH);//获得当前工作路径,用于写日志
+    this->recordPath=workPath;
+    this->recordPath+="/record";
+    readRecord();
+}
 
-    //CONFIG默认参数
-    void configEditor::placeHolder(){
-        string temp=workPath+"/target";
-        strcpy(CONFIG.backUpPath,temp.c_str());
-        CONFIG.compress=true;
-        CONFIG.encryption=true;
-    }
+/* 构造函数，输入record所在的路径，获取record信息 */
+Record::Record(string path){
+    this->recordPath=path;
+    this->recordPath+="/record";
+    readRecord();
+}
 
-    /* 从本地config文件中获取记录信息,构造函数用 */
-    int configEditor::readConfig(){
-        ifstream inFile;
-        inFile.open(configFilePath,ios::in|ios::binary);
-        if(!inFile.is_open()){
-            cout<<"fail to open file: "<<configFilePath<<endl;
-            inFile.close();
-            placeHolder();//设为默认参数
-            return -1;
-        }
-        int count;
-        inFile.read((char*)(&CONFIG),sizeof(config));
-        inFile.close();
-        cout<<"config: "<<configFilePath<<" read! "<<endl;
-        return 0;
-    }
-    
-    configEditor::configEditor(){
-        char temp[MAX_PATH];  
-        getcwd(temp, MAX_PATH);//获得当前工作路径,用于写日志
-        this->workPath=temp;
-        this->configFilePath=this->workPath+"/do_not_touch!";
-        readConfig();
-    }
-
-    /* 写本地config文件,修改完设置用 */
-    int configEditor::writeConfig(){
-        ofstream outFile;
-        outFile.open(configFilePath,ios::out|ios::binary|ios::trunc);
-        if(!outFile.is_open()){
-            cout<<"fail to open file: "<<configFilePath<<endl;
-            outFile.close();
-            return -1;
-        }
-        outFile.write(reinterpret_cast<char *>(&CONFIG),sizeof(config));
+/* 写record文件,备份完文件用 */
+int Record::writeRecord(){
+    ofstream outFile;
+    outFile.open(recordPath,ios::out|ios::binary|ios::trunc);
+    if(!outFile.is_open()){
+        cout<<"fail to open file: "<<recordPath<<endl;
         outFile.close();
-        cout<<"config: "<<configFilePath<<" write! "<<endl;
-        return 0;
+        return -1;
     }
-
-    void configEditor::changeConfig(const config &temp){
-        strcpy(CONFIG.backUpPath,temp.backUpPath);
-        CONFIG.compress=temp.compress;
-        CONFIG.encryption=temp.encryption;
+    struct recordLine temp;
+    for(int i=0;i<this->file.size();i++){
+        temp=this->file[i];
+        outFile.write(reinterpret_cast<char *>(&temp),sizeof(recordLine));
     }
+    cout<<"file: "<<recordPath<<" write! "<<endl;
+    outFile.close();
+    return 0;
+}
     
-    /* 全部输出 */
-    void configEditor::coutConfig(){
-        cout<<"back up dir: "<<CONFIG.backUpPath<<endl;
-        if(!CONFIG.compress)
-            cout<<"Do not ";
-        cout<<"compress while back up."<<endl;
-        if(!CONFIG.encryption)
-            cout<<"Do not ";
-        cout<<"encryption while back up."<<endl;
+/* 输出record文件，调试用 */
+void Record::coutRecord(){
+    for(int i=0;i<this->file.size();i++){
+        cout<<"newFileNum: "<<this->file[i].newFileNum<<endl;
+        printStat(&file[i].s,getSourceFile(this->file[i].sourcePath,this->file[i].fileName));
     }
+}
 
-    string configEditor::retTargetPath(){
-        string temp=this->CONFIG.backUpPath;
-        return temp;
+/* 输入文件名和文件路径，搜索是否在record中，是则返回在链表中位置index，否则返回-1 */
+int Record::getRecord(const char* sourcePath,const char* fileName){
+    int i;
+    int length=file.size();
+    for(i=0;i<length;i++){
+        if(!strcmp(file[i].sourcePath,sourcePath)&&!strcmp(file[i].fileName,fileName))
+            return i;
     }
+    if(i==length) return -1;
+}
 
-    bool configEditor::retIsCompress(){
-        return this->CONFIG.compress;
+/* 通过文件唯一标识符，搜索是否在record中，返回在链表中位置index，否则返回-1 */
+int Record::getRecord(const int& newFileNum){
+    int i;
+    int length=file.size();
+    for(i=0;i<length;i++){
+        if(newFileNum==file[i].newFileNum)
+            return i;
     }
+    if(i==length) return -1;
+}
+
+/* 输入index，返回对应的文件信息 */
+const struct recordLine& Record::getLine(const int &index){
+    return file[index];
+}
+
+/* 输入文件路径，文件名，文件信息，在record中加一行，并返回新生成的文件唯一序号newFileNum */
+int Record::addRecord(const char* sourcePath,const char* fileName,const struct stat &s){
+    struct recordLine temp;
+    strcpy(temp.fileName,fileName);
+    strcpy(temp.sourcePath,sourcePath);
+    temp.s=s;
+    clock_gettime(CLOCK_REALTIME, &temp.backUpTime);//备份文件时，自动获取当前系统时间
+    if(file.size()) temp.newFileNum=(file.end()-1)->newFileNum+1;
+    else temp.newFileNum=1;
+    this->file.push_back(temp);
+    len++;
+    return temp.newFileNum;
+}
+
+/* 根据index删除文件，需要先调用getRecord获取index，注意先判断返回值是否为-1 */
+int Record::rmRecord(const int &index){
+    this->file.erase(file.begin()+index);
+    if(len)len--;
+    else {
+        cout<<"rm record fail!"<<endl;
+        return -1;
+    }
+    cout<<"rm record success!"<<endl;
+    return 0;
+}
+
+
+/* CONFIG的默认参数 */
+void configEditor::placeHolder(){
+    string temp=workPath+"/target";
+    strcpy(CONFIG.backUpPath,temp.c_str());
+    CONFIG.compress=true;
+    CONFIG.encryption=true;
+}
+
+/* 从本地config文件中获取设置信息,构造函数用 */
+int configEditor::readConfig(){
+    ifstream inFile;
+    inFile.open(configFilePath,ios::in|ios::binary);
+    if(!inFile.is_open()){
+        cout<<"fail to open file: "<<configFilePath<<endl;
+        inFile.close();
+        placeHolder();//设为默认参数
+        return -1;
+    }
+    int count;
+    inFile.read((char*)(&CONFIG),sizeof(config));
+    inFile.close();
+    cout<<"config: "<<configFilePath<<" read! "<<endl;
+    return 0;
+}
+
+/* 构造函数，获取本地config信息 */ 
+configEditor::configEditor(){
+    char temp[MAX_PATH];  
+    getcwd(temp, MAX_PATH);//获得当前工作路径,用于写日志
+    this->workPath=temp;
+    this->configFilePath=this->workPath+"/do_not_touch!";
+    readConfig();
+}
+
+/* 写本地config文件,修改完设置用 */
+int configEditor::writeConfig(){
+    ofstream outFile;
+    outFile.open(configFilePath,ios::out|ios::binary|ios::trunc);
+    if(!outFile.is_open()){
+        cout<<"fail to open file: "<<configFilePath<<endl;
+        outFile.close();
+        return -1;
+    }
+    outFile.write(reinterpret_cast<char *>(&CONFIG),sizeof(config));
+    outFile.close();
+    cout<<"config: "<<configFilePath<<" write! "<<endl;
+    return 0;
+}
+
+/* 修改设置 */
+void configEditor::changeConfig(const config &temp){
+    strcpy(CONFIG.backUpPath,temp.backUpPath);
+    CONFIG.compress=temp.compress;
+    CONFIG.encryption=temp.encryption;
+}
     
-    bool configEditor::retIsEncryption(){
-        return this->CONFIG.encryption;
-    }
+/* 输出设置信息，调试用 */
+void configEditor::coutConfig(){
+    cout<<"back up dir: "<<CONFIG.backUpPath<<endl;
+    if(!CONFIG.compress)
+        cout<<"Do not ";
+    cout<<"compress while back up."<<endl;
+    if(!CONFIG.encryption)
+        cout<<"Do not ";
+    cout<<"encryption while back up."<<endl;
+}
 
+/* 返回备份目录 */
+string configEditor::retTargetPath(){
+    string temp=this->CONFIG.backUpPath;
+    return temp;
+}
 
-string modeToStr(mode_t mode){
+/* 返回是否压缩，废弃 */
+bool configEditor::retIsCompress(){
+    return this->CONFIG.compress;
+}
+
+/* 返回是否加密，废弃 */
+bool configEditor::retIsEncryption(){
+    return this->CONFIG.encryption;
+}
+
+/* 将文件mode化为_rw_r__r__的字符串形式 */
+string modeToStr(const mode_t &mode){
     string str="";
 
 /*
@@ -524,14 +486,14 @@ string modeToStr(mode_t mode){
     return str;
 }
 
-// timespec to present time
-string timeSpecToStr(timespec t){
+/* 将timespec化为字符串的可读形式 */
+string timeSpecToStr(const timespec &t){
     time_t now=t.tv_sec;
 	return ctime(&now);
 }
 
-//owner:group
-string ownerGroup(struct stat info){
+/* 将组信息和用户信息化为字符串的可读形式 */
+string ownerGroup(const struct stat &info){
     struct passwd *pw = getpwuid(info.st_uid);
     struct group  *gr = getgrgid(info.st_gid);
 
@@ -541,7 +503,7 @@ string ownerGroup(struct stat info){
     return temp;
 }
 
-/* 若为目录或普通文件返回1 */
+/* 判断是否为目录或普通文件，是返回1，否返回0 */
 bool isRegOrDir(const char* path,const char* name){
     struct stat s=getStat(path,name);
     mode_t m=s.st_mode;

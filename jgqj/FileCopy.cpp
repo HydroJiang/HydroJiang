@@ -18,11 +18,7 @@ using namespace std;
 #define WRITE_RECORD true       //标志位
 #define NOT_WRITE_RECORD false
 
-int cp(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName);
-int cpWriteRecord(Record &record,const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName);
-int cpReadRecord(Record &record,const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName);
-
-/* 根据新的目录和新的文件名，在新目录下创建一个新文件，并把普通文件拷贝过去 */
+/* 输入源路径和目标路径，将源路径指向的文件复制到目标路径，成功返回0，失败返回-1，只能复制普通文件 */
 int copyNormailFile(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName){
     createDirList(targetPath);//在复制文件/文件夹之前先创造路径
     string sourceFile=getSourceFile(sourcePath,sourceFileName);
@@ -42,7 +38,7 @@ int copyNormailFile(const char* sourcePath,const char* sourceFileName,const char
     return copyContent(sourcePath,sourceFileName,targetPath,targetFileName);
 }
 
-/* 根据新的目录和新的目录名，在目标目录下创建一个新目录，并递归把所有文件拷贝过去 */
+/* 输入源路径和目标路径，将源路径指向的目录及下面所有文件复制到目标路径，成功返回0，失败返回-1，只能复制目录 */
 int copyDir(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName){
     createDirList(targetPath);//在复制文件/文件夹之前先创造路径
     string sourceFile=getSourceFile(sourcePath,sourceFileName);
@@ -79,18 +75,7 @@ int copyDir(const char* sourcePath,const char* sourceFileName,const char* target
     return 0;
 }
 
-/*
-int link(const char *oldpath,const char *newpath);
-功能：创建硬链接文件
-
-int symlink(const char *linkpath,const char *targetPath);
-功能：创建软链接文件
-
-ssize_t readlink(const char *pathname, char *buf, size_t bufsiz);
-功能：读取软链接文件链接路径，返回值为软链接文件大小
-
-*/
-/* 输入旧目录，旧文件名，新目录，新文件名，并把软链接文件拷过去 */
+/* 输入源路径和目标路径，将源路径指向的文件复制到目标路径，成功返回0，失败返回-1，只能复制链接文件 */
 int copyLink(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName){
     createDirList(targetPath);//在复制文件/文件夹之前先创造路径
     string sourceFile=getSourceFile(sourcePath,sourceFileName);
@@ -129,11 +114,7 @@ int copyLink(const char* sourcePath,const char* sourceFileName,const char* targe
     }
 }
 
-/*
-Create a new FIFO named PATH, with permission bits MODE.
-extern int mkfifo (const char *__path, __mode_t __mode)
-输入旧目录，旧文件名，新目录，新文件名，并把管道文件拷过去
-*/
+/* 输入源路径和目标路径，将源路径指向的文件复制到目标路径，成功返回0，失败返回-1，只能复制管道文件 */
 int copyPipe(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName){
     createDirList(targetPath);//在复制文件/文件夹之前先创造路径
     string sourceFile=getSourceFile(sourcePath,sourceFileName);
@@ -169,11 +150,7 @@ int copyPipe(const char* sourcePath,const char* sourceFileName,const char* targe
     }
 }
 
-/*
-创建设备文件
-int mknod (const char *__path, __mode_t __mode, __dev_t __dev)
-只能在sudo模式运行，才能执行此函数
-*/
+/* 输入源路径和目标路径，将源路径指向的文件复制到目标路径，成功返回0，失败返回-1，只能复制块文件或字符文件 */
 int copyDev(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName){
     createDirList(targetPath);//在复制文件/文件夹之前先创造路径
     string sourceFile=getSourceFile(sourcePath,sourceFileName);
@@ -207,7 +184,7 @@ int copyDev(const char* sourcePath,const char* sourceFileName,const char* target
     }
 }
 
-/* 复制套接字文件 */
+/* 输入源路径和目标路径，将源路径指向的文件复制到目标路径，成功返回0，失败返回-1，只能复制套接字文件 */
 int copySocket(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName){
     createDirList(targetPath);//在复制文件/文件夹之前先创造路径
     string sourceFile=getSourceFile(sourcePath,sourceFileName);
@@ -241,7 +218,7 @@ int copySocket(const char* sourcePath,const char* sourceFileName,const char* tar
     }
 }
 
-/* copy除了dir外所有文件类型 */
+/* 输入源路径和目标路径，将源路径指向的文件复制到目标路径，成功返回0，失败返回-1，不能复制目录文件 */
 int copyOtherFile(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName){
     struct stat fileData=getStat(sourcePath,sourceFileName);
     mode_t mode=fileData.st_mode;
@@ -269,7 +246,7 @@ int copyOtherFile(const char* sourcePath,const char* sourceFileName,const char* 
     return flag;
 }
 
-/* cp,自动判断文件类型进行复制 */
+/* 输入源路径和目标路径，将源路径指向的文件复制到目标路径，成功返回0，失败返回-1 */
 int cp(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName){
     struct stat fileData=getStat(sourcePath,sourceFileName);
     if(S_ISDIR(fileData.st_mode)){
@@ -279,7 +256,7 @@ int cp(const char* sourcePath,const char* sourceFileName,const char* targetPath,
     }
 }
 
-/* 根据新的目录和新的目录名，在目标目录下创建一个新目录，并递归把所有文件拷贝过去 */
+/* 输入源路径和目标路径，将源路径指向的目录和下面的所有文件复制到目标路径，并将文件信息写到备份目录下的recor中，成功返回0，失败返回-1，只能复制目录 */
 int copyDirWriteRecord(Record &record,const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName){
     createDirList(targetPath);//在复制文件/文件夹之前先创造路径
     string sourceFile=getSourceFile(sourcePath,sourceFileName);
@@ -318,7 +295,7 @@ int copyDirWriteRecord(Record &record,const char* sourcePath,const char* sourceF
     return 0;
 }
 
-/* 复制的同时写record */
+/* 输入源路径和目标路径，将源路径指向的目录或文件复制到目标路径，并将文件信息写到备份目录下的recor中，成功返回0，失败返回-1 */
 int cpWriteRecord(Record &record,const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName){
     struct stat fileData=getStat(sourcePath,sourceFileName);
     int newFileNum=record.addRecord(sourcePath,sourceFileName,fileData);//先加记录获取唯一序列号
@@ -342,7 +319,8 @@ int cpWriteRecord(Record &record,const char* sourcePath,const char* sourceFileNa
     return newFileNum;//返回文件名，方便后续压缩、加密
 }
 
-/* 根据新的目录和新的目录名，在目标目录下创建一个新目录，并递归把所有文件拷贝过去 */
+/* 输入源路径和目标路径，将源路径指向的目录和下面的所有文件复制到目标路径，并将文件信息写到备份目录下的recor中，成功返回0，失败返回-1，只能复制目录 */
+/* 目标路径可以为NULL，若为空则读取record中的文件信息，将文件复制到保存信息中的路径 */
 int copyDirReadRecord(Record &record,const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName){
     createDirList(targetPath);//在复制文件/文件夹之前先创造路径
     int newFileNum=atoi(sourceFileName);//备份文件名为唯一序列号
@@ -397,8 +375,9 @@ int copyDirReadRecord(Record &record,const char* sourcePath,const char* sourceFi
     closedir(dir);
     return 0;
 }
-
-/* 读record来还原文件 */
+ 
+/* 输入源路径和目标路径，将源路径指向的目录或文件复制到目标路径，并将文件信息写到备份目录下的recor中，成功返回0，失败返回-1 */
+/* 目标路径可以为NULL，若为空则读取record中的文件信息，将文件复制到保存信息中的路径 */
 int cpReadRecord(Record &record,const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName){
     int newFileNum=atoi(sourceFileName);//备份文件名为唯一序列号
     int index=record.getRecord(newFileNum);

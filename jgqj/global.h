@@ -45,7 +45,7 @@ extern void createDirList(const char* sourcePath);
 
 extern void changeStat(const char* targetFile, const struct stat &s);
 
-extern int mksock (const char *__path, __mode_t __mode);
+extern int mksock (const char *__path, const __mode_t &__mode);
 
 extern string getSourceFile(const char* path,const char* fileName);
 
@@ -92,11 +92,11 @@ public:
     
     int getRecord(const int& newFileNum);
     
-    const struct recordLine& getLine(int index);
+    const struct recordLine& getLine(const int &index);
 
-    int addRecord(const char* sourcePath,const char* fileName,struct stat s);
+    int addRecord(const char* sourcePath,const char* fileName,const struct stat &s);
 
-    int rmRecord(int index);
+    int rmRecord(const int &index);
 };
 
 struct config{
@@ -130,11 +130,11 @@ class configEditor{
     string retTargetPath();
 };
 
-extern string modeToStr(mode_t mode);
+extern string modeToStr(const mode_t &mode);
 
-extern string timeSpecToStr(timespec t);
+extern string timeSpecToStr(const timespec &t);
 
-extern string ownerGroup(struct stat info);
+extern string ownerGroup(const struct stat &info);
 
 extern bool isRegOrDir(const char* path,const char* name);
 

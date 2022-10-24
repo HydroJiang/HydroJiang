@@ -12,10 +12,7 @@
 
 using namespace std;
 
-int rm(const char* path,const char* fileName);
-int rmWriteRecord(Record &record,const char* path,const char* fileName);
-
-/* 若本文件不为文件夹，则删除 */
+/* 输入目标路径，删除目标路径指向的文件，成功返回0，失败返回-1，只能删除普通文件 */
 int deleteFile(const char* path,const char* fileName){
     struct stat buf=getStat(path,fileName);
     string name=getSourceFile(path,fileName);
@@ -33,7 +30,7 @@ int deleteFile(const char* path,const char* fileName){
     }
 }
 
-/* 若本文件为文件夹，则递归删除此文件夹, rm -r */
+/* 输入目标路径，删除目标路径指向的目录及下面所有文件，成功返回0，失败返回-1，只能删除目录 */
 int deleteDir(const char* path,const char* fileName){
     int flag=0;
     struct stat buf=getStat(path,fileName);
@@ -77,7 +74,7 @@ int deleteDir(const char* path,const char* fileName){
     }
 }
 
-/* 通用rm -r，自动判断文件类型 */
+/* 输入目标路径，删除目标路径指向的文件或路径，成功返回0，失败返回-1 */
 int rm(const char* path,const char* fileName){
     if(access(getSourceFile(path,fileName).c_str(),F_OK)) return -1;
     struct stat buf=getStat(path,fileName);
@@ -89,7 +86,7 @@ int rm(const char* path,const char* fileName){
     }
 }
 
-/* 若本文件为文件夹，则递归删除此文件夹, rm -r */
+/* 输入目标路径，删除目标路径指向的目录及下面所有文件，并删除record中的对应文件信息，成功返回0，失败返回-1，只能删除目录 */
 int rmDirWriteRecord(Record &record,const char* path,const char* fileName){
     int flag=0;
     struct stat buf=getStat(path,fileName);
@@ -133,6 +130,7 @@ int rmDirWriteRecord(Record &record,const char* path,const char* fileName){
     }
 }
 
+/* 输入目标路径，删除目标路径指向的文件或目录，并删除record中的对应文件信息，成功返回0，失败返回-1 */
 int rmWriteRecord(Record &record,const char* path,const char* fileName){
     string name=getSourceFile(path,fileName);
     int newFileNum=atoi(fileName);//备份文件名为唯一序列号

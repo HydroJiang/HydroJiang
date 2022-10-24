@@ -1,6 +1,7 @@
 #include "configPage.h"
 #include "ui_configPage.h"
 
+/* 初始化设置页面 */
 configPage::configPage(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::configPage)
@@ -16,8 +17,7 @@ configPage::~configPage()
     delete ui;
 }
 
-/* this won't move the back up files from old path to new path
-   this just merely change back up dir. */
+/* 改变备份目录并写config，不会删除原备份目录下文件 */
 void configPage::on_changeDirButton_clicked()
 {
     string newPath=QFileDialog::getExistingDirectory(this,"choose dir","/home").toStdString();
@@ -63,6 +63,7 @@ void configPage::on_changeDirButton_clicked()
 //    emit freshMain();
 //}
 
+/* 刷新设置页面 */
 void freshConfig(Ui::configPage* ui){
     configEditor config;
     string dir=config.retTargetPath();
