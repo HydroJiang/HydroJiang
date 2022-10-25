@@ -105,7 +105,7 @@ int putBack(const char* sourcePath,const char* sourceFileName,const char* target
 
 /* 输入源路径，将源路径指向的文件和目标路径的文件进行比较。相同返回0，不同返回-1 */
 /* 目标路径为config指向的record中记录的源路径 */
-int compareFile(const char* sourcePath,const char* sourceFileName,const string &code){
+int compareFile(const char* sourcePath,const char* sourceFileName,const string &code,vector<string> &wrongList){
     configEditor config;
     Record record(config.retTargetPath());
 
@@ -134,19 +134,16 @@ int compareFile(const char* sourcePath,const char* sourceFileName,const string &
     }
 
     //反馈信息由cmp输出
-    if(cmpReadRecord(record,tempPath.c_str(),sourceFileName)){//最后将临时路径下的sourceFileName与源文件比较
-        // cout<<sourceFileName<<" restore: copy fail!"<<endl;
-        rm(workPath,"jgqjtemp");//删除临时文件
-        return -1;
-    }else{
-        // cout<<sourceFileName<<" restore: copy success!"<<endl;
-    }
+    wrongList=cmpReadRecord(record,tempPath.c_str(),sourceFileName);
     rm(workPath,"jgqjtemp");//删除临时文件
-    return 0;
+    if(wrongList.empty())return 0;
+    return -1;
 
     }
 
-    return cmpReadRecord(record,sourcePath,sourceFileName);
+    wrongList=cmpReadRecord(record,sourcePath,sourceFileName);
+    if(wrongList.empty())return 0;
+    return -1;
 }
 
 /* 输入源路径，删除源路径指向的文件，同时删除config指向的record中的相应文件信息。成功返回0，失败返回-1 */

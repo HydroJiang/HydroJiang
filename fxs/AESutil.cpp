@@ -787,7 +787,10 @@ void decryptionSingleFile(string sourceFileName, string desFileName, string Key)
                     file_len = char2longArr((char*)out);
                     free(w);
                 }
-				write_to_file(out, file_len % 16, desFileName);
+				if(file_len%16==0){
+					write_to_file(out, 16, desFileName);
+				}else
+					write_to_file(out, file_len % 16, desFileName);
             }
 		}
     }

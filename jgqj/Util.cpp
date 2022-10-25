@@ -307,7 +307,6 @@ int Record::rmRecord(const int &index){
     return 0;
 }
 
-
 /* CONFIG的默认参数 */
 void configEditor::placeHolder(){
     string temp=workPath+"/target";

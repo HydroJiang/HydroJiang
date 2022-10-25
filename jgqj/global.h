@@ -21,7 +21,7 @@
 #include <iostream>
 #include <dirent.h>
 
-#include "../fxs/FXSGlobal.h"
+// #include "../fxs/FXSGlobal.h"
 
 using namespace std;
 
@@ -143,20 +143,20 @@ extern int backUp(const char* sourcePath,const char* sourceFileName,const char* 
 
 extern int putBack(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName,const string &code);
 
-extern int compareFile(const char* sourcePath,const char* sourceFileName,const string &code);
+extern int compareFile(const char* sourcePath,const char* sourceFileName,const string &code,vector<string> &wrongList);
 
 extern int rmBackUp(const char* sourcePath,const char* sourceFileName);
 
 //FileCompare.cpp
 extern int cmp(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName);
 
-extern int cmpReadRecord(Record &record,const char* sourcePath,const char* sourceFileName);
+extern int cmpDir(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName);
+
+extern vector<string> cmpReadRecord(Record &record,const char* sourcePath,const char* sourceFileName);
 
 extern int cmpNormailFile(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName);
 
-extern int cmpDir(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName);
-
-extern int cmpDirReadRecord(Record &record,const char* sourcePath,const char* sourceFileName);
+extern vector<string>  cmpDirReadRecord(Record &record,const char* sourcePath,const char* sourceFileName);
 
 //FileCopy.cpp
 extern int cp(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName);

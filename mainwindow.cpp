@@ -93,6 +93,7 @@ void MainWindow::on_dirMenu_customContextMenuRequested(const QPoint &pos)
 
 /* 点击比较，比较文件和源文件 */
 void MainWindow::slotActionCompare(){
+    vector<string> wrongList;
     QTableWidgetItem* t=ui->dirMenu->item(ui->dirMenu->currentIndex().row(),0);
     string targetFileName=t->text().toStdString();
 
@@ -105,10 +106,17 @@ void MainWindow::slotActionCompare(){
     string code=this->getPasswd();
     if(code=="")return;
 
-    if(-1!=compareFile(targetPath.c_str(),targetFileName.c_str(),code)){
+    if(-1!=compareFile(targetPath.c_str(),targetFileName.c_str(),code,wrongList)){
         msg+=" is same to source File!";
     }else{
-        msg+=" is different to source File!";
+        msg+=" is different to source File!\n  WrongList: \n";
+        for(int i=0;i<wrongList.size();i++){
+            string temp=to_string(i);
+            temp+=" : ";
+            temp+=wrongList[i];
+            temp+="\n";
+            msg+=temp;
+        }
     }
 
     QMessageBox::information(NULL,"message",QString::fromStdString(msg),QMessageBox::Yes,QMessageBox::Yes);

@@ -27,6 +27,7 @@ SOURCES += \
     fxs/fileIO.cpp \
     jgqj/function.cpp \
     configPage.cpp \
+    jgqj/testFile.cpp \
     main.cpp \
     mainwindow.cpp
 

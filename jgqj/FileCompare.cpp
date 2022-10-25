@@ -188,12 +188,14 @@ int cmp(const char* sourcePath,const char* sourceFileName,const char* targetPath
 }
 
 /* 调用record获取源路径，输入文件路径，比较2个路径指向文件的内容，一样返回0，不一样返回-1，只能比较目录，其他会报错 */
-int cmpDirReadRecord(Record &record,const char* sourcePath,const char* sourceFileName){
+vector<string> cmpDirReadRecord(Record &record,const char* sourcePath,const char* sourceFileName){
+    vector<string> wrongList;
     int newFileNum=atoi(sourceFileName);//备份文件名为唯一序列号
     int index=record.getRecord(newFileNum);
     if(index==-1){//不存在于记录中  不可能出现这种情况
         cout<<"palceholder"<<endl;
-        return -1;
+        wrongList.push_back(getSourceFile(sourcePath,sourceFileName));
+        return wrongList;
     }
     struct recordLine fileData=record.getLine(index);
     const char* targetPath=fileData.sourcePath;//获取源文件路径
@@ -208,49 +210,56 @@ int cmpDirReadRecord(Record &record,const char* sourcePath,const char* sourceFil
     
     if(sizeof(fileData1)<0||!S_ISDIR(fileData1.st_mode)){
         cout<<sourceFile<<" is not a dir"<<endl;
-        return -1;
+        wrongList.push_back(targetFile);
+        return wrongList;
     }
     if(sizeof(fileData2)<0||!S_ISDIR(fileData2.st_mode)){
         cout<<targetFile<<" is not a dir"<<endl;
-        return -1;
+        wrongList.push_back(targetFile);
+        return wrongList;
     }
 
     if(!(dir=opendir(sourceFile.c_str()))){
         cout<<"fail to open "<<sourceFile<<endl;
-        return -1;
+        wrongList.push_back(targetFile);
+        return wrongList;
     }
 
     if(cmpStat(fileData1,fileData2)){
         cout<<"dir stat differs."<<endl;
-        return -1;
+        wrongList.push_back(targetFile);
+        return wrongList;
     }
 
-    while((dirData=readdir(dir))!=NULL){//不能用||判断2个条件，否则第一个条件为真不会执行第2个
+    while((dirData=readdir(dir))!=NULL){
         if (!(strncmp(dirData->d_name,".",1) && strncmp(dirData->d_name,".",2))){
 		    continue;
 	    }
 
         const char* newSourcePath=sourceFile.c_str();
         const char* newSourceFileName=dirData->d_name;
+        vector<string> temp=cmpReadRecord(record,newSourcePath,newSourceFileName);
 
-        if(cmpReadRecord(record,newSourcePath,newSourceFileName)){
-            closedir(dir);
+        if(!temp.empty()){
             cout<<"dir "<<sourceFile<<" and "<<targetFile<<" are different!"<<endl;
-            return -1;
+            wrongList.insert(wrongList.end(),temp.begin(),temp.end());
+            continue;
         }
     }
     closedir(dir);
-    cout<<"dir "<<sourceFile<<" and "<<targetFile<<" are the same!"<<endl;
-    return 0;
+    if(wrongList.empty()) cout<<"dir "<<sourceFile<<" and "<<targetFile<<" are the same!"<<endl;
+    return wrongList;
 }
 
 /* 调用record获取源路径，输入文件路径，比较2个路径指向文件的内容，一样返回0，不一样返回-1 */
-int cmpReadRecord(Record &record,const char* sourcePath,const char* sourceFileName){
+vector<string> cmpReadRecord(Record &record,const char* sourcePath,const char* sourceFileName){
+    vector<string> wrongList;
     int newFileNum=atoi(sourceFileName);//备份文件名为唯一序列号
     int index=record.getRecord(newFileNum);
     if(index==-1){//不存在于记录中  不可能出现这种情况
         cout<<"palceholder"<<endl;
-        return -1;
+        wrongList.push_back(getSourceFile(sourcePath,sourceFileName));
+        return wrongList;
     }
     struct recordLine fileData=record.getLine(index);
     const char* targetPath=fileData.sourcePath;//获取源文件路径
@@ -263,17 +272,21 @@ int cmpReadRecord(Record &record,const char* sourcePath,const char* sourceFileNa
 
     if(cmpStat(fileData1,fileData2)){
         cout<<"stat differs."<<endl;
-        return -1;
+        wrongList.push_back(targetFile);
+        return wrongList;
     }
     if(S_ISDIR(fileData1.st_mode)&&S_ISDIR(fileData2.st_mode)){
-        if(cmpDirReadRecord(record,sourcePath,sourceFileName)){
-            return -1;
+        vector<string> temp=cmpDirReadRecord(record,sourcePath,sourceFileName);
+        if(!temp.empty()){
+            wrongList.insert(wrongList.end(),temp.begin(),temp.end());
+            return wrongList;
         }
     }else{
         if(cmpNormailFile(sourcePath,sourceFileName,targetPath,targetFileName)){
-            return -1;
+            wrongList.push_back(targetFile);
+            return wrongList;
         }
     }
-    return 0;
+    return wrongList;
 }
 
