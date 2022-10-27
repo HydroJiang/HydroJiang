@@ -21,8 +21,6 @@
 #include <iostream>
 #include <dirent.h>
 
-// #include "../fxs/FXSGlobal.h"
-
 using namespace std;
 
 //sockutil.cpp

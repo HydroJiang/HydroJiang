@@ -266,6 +266,7 @@ void MainWindow::freshTalbleWidget(){
         row++;
     }
     closedir(dir);
+    ui->dirMenu->sortItems(0,Qt::DescendingOrder);
 }
 
 /* 备份文件和备份目录重用代码 */
@@ -297,7 +298,7 @@ void MainWindow::backUpInQt(string pathAndName){
 string MainWindow::getPasswd(){
     bool ok=false;
     QString passWord;
-    passWord = QInputDialog::getText(this, "input code","input your code", QLineEdit::Password,0, &ok);
+    passWord = QInputDialog::getText(this, "password","input your password", QLineEdit::Password,0, &ok);
     string code=passWord.toStdString();
     cout<<code<<endl;
     return code;
