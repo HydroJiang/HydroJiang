@@ -154,7 +154,7 @@ extern vector<string> cmpReadRecord(Record &record,const char* sourcePath,const 
 
 extern int cmpNormailFile(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName);
 
-extern vector<string>  cmpDirReadRecord(Record &record,const char* sourcePath,const char* sourceFileName);
+extern vector<string> cmpDirReadRecord(Record &record,const char* sourcePath,const char* sourceFileName);
 
 //FileCopy.cpp
 extern int cp(const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName);

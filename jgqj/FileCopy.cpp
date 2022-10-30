@@ -295,7 +295,7 @@ int copyDirWriteRecord(Record &record,const char* sourcePath,const char* sourceF
     return 0;
 }
 
-/* 输入源路径和目标路径，将源路径指向的目录或文件复制到目标路径，并将文件信息写到备份目录下的recor中，成功返回0，失败返回-1 */
+/* 输入源路径和目标路径，将源路径指向的目录或文件复制到目标路径，并将文件信息写到备份目录下的record中，成功返回新生成的文件名，失败返回-1 */
 int cpWriteRecord(Record &record,const char* sourcePath,const char* sourceFileName,const char* targetPath,const char* targetFileName){
     struct stat fileData=getStat(sourcePath,sourceFileName);
     int newFileNum=record.addRecord(sourcePath,sourceFileName,fileData);//先加记录获取唯一序列号
